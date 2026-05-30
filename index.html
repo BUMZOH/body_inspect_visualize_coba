@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        /* DEBUG */
+        /* * { border: 1px solid gray;} */
+        /* .form-area {background: beige;} */
+        /* h2 {background: lightgreen;} */
+        /* ---------- */
+
+        * {margin: 0;padding: 0;}
+        body {margin: 20px;}
+        h1 {
+            margin-bottom: 25px;
+            background: #444; 
+            color: white; 
+            padding: 8px 15px; 
+            font-size: 28px;
+        }
+
+        /* --- フォームエリア --- */
+        .form-area {
+            padding: 15px;
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 15px;
+        }
+        .form-item {
+            display: flex;
+            flex-direction: column;
+            /* gap: 5px; */
+        }
+        .form-item.note {
+            grid-column: 2/7;
+        }
+        div.form-item.button {
+            grid-column: 9/10;
+            display: flex;
+            justify-content: center;
+            align-items:center;
+        }
+
+        .form-item input {
+            height: 2em;
+            width: 90%;
+            font-size: 16px;
+            padding-left: 10px;
+        }
+        .form-item button {
+            width: 150px;
+            height: 3em;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        /* --- テーブルエリア --- */
+        div.table-area{
+            padding: 15px;
+        }
+        div.table-area h2 {
+            margin-top: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+        th, td {
+            width: 130px;
+            height: 2.3em;
+            border: 1px solid #999;
+        }
+        th {background: lightgray;}
+        td {text-align: right;padding-right: 15px;}
+
+        div.table-area div.button {
+            text-align: right;
+            padding-right: 20px;
+        }
+        div.table-area button {
+            height: 3em;
+            width: 160px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        /* --- ボタンエリア --- */
+        div.button-area {
+            padding-top: 30px;
+            padding-right: 30px;
+            text-align: right;
+        }
+        div.button-area button {
+            height: 3em;
+            width: 160px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+
+    </style>
+</head>
+<body>
+    <h1>ボディ検査装置 稼働データ入力画面</h1>
+    <!------- データ入力部 ------->
+    <div class="form-area">
+        <!-- 1段目 -->
+        <div class="form-item">
+            <label for="">検査機番：</label><input type="text">
+        </div>
+        
+        <div class="form-item">
+            <label for="">記録日：</label><input type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="">シフト：</label><input type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="">品番：</label><input type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="">NC加工日：</label><input type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="">NC機番：</label><input type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="">月別通しNo：</label><input type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="">検査開始時間：</label><input type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="">検査終了時間：</label><input type="text">
+        </div>
+
+        <!-- 2段目 -->
+        <div class="form-item">
+            <label for="">変化点記録：</label><input type="text">
+        </div>
+        
+        <div class="form-item">
+            <label for="">カメラしきい値：</label><input type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="">担当者：</label><input type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="">外観チェック：</label><input type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="">外観チェック者：</label><input type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="">段取時確認作業：</label><input type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="">残留品確認者：</label><input type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="">5STカメラ確認者：</label><input type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="">残留品Wチェック者：</label><input type="text" placeholder="バーコード読取">
+        </div>
+
+        <!-- 3段目 -->
+        <div class="form-item">
+            <label for="">落下品数：</label><input type="text" placeholder="手入力">
+        </div>
+        
+        <div class="form-item note">
+            <label for="">変化点／異常報告：</label><input type="text">
+        </div>
+
+        <div class="form-item button">
+            <button>データ更新</button>
+        </div>
+    </div>
+    <hr>
+
+    <!------- テーブル表示部 ------->
+    <div class="table-area">
+        <h2>良品数／不良品数</h2>
+        <table>
+            <tr>
+                <th>良品数</th> <th>不良数</th>
+            </tr>
+            <tr>
+                <td>1652</td> <td>35</td>
+            </tr>
+        </table>
+
+        <h2>項目別不良数</h2>
+        <table>
+            <tr>
+                <th>検査項目</th> <th>内径</th> <th>φ0.71</th> <th>全長</th> <th>テーパ厚み</th> <th>底</th> <th>厚み</th> <th>側面</th> <th>6st</th>
+            </tr>
+            <tr>
+                <th>初回検査時</th> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>6</td>
+            </tr>
+            <tr>
+                <th>再検査時</th> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>5</td> <td>7</td> <td>31</td>
+            </tr>
+        </table>
+
+        <h2>ステーション別アラーム発生数</h2>
+        <table>
+            <tr>
+                <th>1ST</th> <th>2ST</th> <th>3ST</th> <th>4ST</th> <th>5ST</th> <th>6ST</th> <th>7ST</th> <th>8ST</th> <th>その他</th>
+            </tr>
+            <tr>
+                <td>4</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>6</td>
+            </tr>
+        </table>
+
+        <div class="button">
+            <button>PLC読み出し</button>
+        </div>
+    </div>
+
+    <hr>
+
+    <!------- テーブル表示部 ------->
+    <div class="button-area">
+        <button>データ登録</button>
+    </div>
+
+
+</body>
+</html>
