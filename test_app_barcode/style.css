@@ -1,0 +1,52 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 30px;
+    font-family: sans-serif;
+}
+
+h1 {
+    margin-bottom: 25px;
+    padding: 10px 15px;
+    background: #444;
+    color: white;
+    font-size: 24px;
+}
+
+.form-area {
+    display: grid;
+    grid-template-columns: 160px 300px;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+input {
+    height: 36px;
+    padding: 5px 10px;
+    font-size: 18px;
+}
+
+#part_name {
+    background: #f0f0f0;
+}
+
+.sample-area {
+    padding: 15px;
+    border: 1px solid #ccc;
+    width: 460px;
+}
+
+.sample-area p {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.sample-area li {
+    margin-left: 20px;
+    line-height: 1.8;
+}

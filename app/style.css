@@ -1,0 +1,86 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 20px;
+    font-family: sans-serif;
+}
+
+h1 {
+    margin-bottom: 25px;
+    background: #444;
+    color: white;
+    padding: 8px 15px;
+    font-size: 28px;
+}
+
+.form-area {
+    padding: 15px;
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.form-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-item.note {
+    grid-column: 2 / 7;
+}
+
+.form-item input,
+.form-item select {
+    height: 2em;
+    width: 90%;
+    font-size: 16px;
+    padding-left: 10px;
+}
+
+.table-area {
+    padding: 15px;
+}
+
+.table-area h2 {
+    margin-top: 20px;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+th,
+td {
+    width: 130px;
+    height: 2.3em;
+    border: 1px solid #999;
+}
+
+th {
+    background: lightgray;
+}
+
+td {
+    text-align: right;
+    padding-right: 15px;
+}
+
+.button-area {
+    padding-top: 30px;
+    padding-right: 30px;
+    text-align: right;
+}
+
+.button-area button {
+    margin-left: 15px;
+    height: 3em;
+    width: 160px;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ボディ検査装置 稼働データ入力画面</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>ボディ検査装置 稼働データ入力画面</h1>
+
+    <!------- データ入力部 ------->
+    <div class="form-area">
+        <!-- 1段目 -->
+        <div class="form-item">
+            <label for="inspection_machine_no">検査機番：</label>
+            <input id="inspection_machine_no" type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="record_date">記録日：</label>
+            <input id="record_date" type="date">
+        </div>
+
+        <div class="form-item">
+            <label for="shift_name">シフト：</label>
+            <select name="" id="shift_name">
+                <option value=""></option>
+                <option value="昼勤">昼勤</option>
+                <option value="夜勤">夜勤</option>
+            </select>
+        </div>
+
+        <div class="form-item">
+            <label for="part_no">品番：</label>
+            <input id="part_no" type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="nc_process_date">NC加工日：</label>
+            <input id="nc_process_date" type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="nc_machine_no">NC機番：</label>
+            <input id="nc_machine_no" type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="monthly_serial_no">月別通しNo：</label>
+            <input id="monthly_serial_no" type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="inspection_start_time">検査開始時間：</label>
+            <input id="inspection_start_time" type="datetime-local" step="1">
+        </div>
+
+        <div class="form-item">
+            <label for="inspection_end_time">検査終了時間：</label>
+            <input id="inspection_end_time" type="datetime-local" step="1">
+        </div>
+
+        <!-- 2段目 -->
+        <div class="form-item">
+            <label for="change_point_record">変化点記録：</label>
+            <input id="change_point_record" type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="camera_threshold">カメラしきい値：</label>
+            <select name="" id="camera_threshold">
+                <option value=""></option>
+                <option value="正常">正常</option>
+                <option value="変更有">変更有</option>
+            </select>
+        </div>
+
+        <div class="form-item">
+            <label for="worker_name">担当者：</label>
+            <input id="worker_name" type="text"placeholder="バーコード読取">
+        </div>
+
+        <div class="form-item">
+            <label for="appearance_check">外観チェック：</label>
+            <input id="appearance_check" type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="appearance_checker">外観チェック者：</label>
+            <input id="appearance_checker" type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="setup_check">段取時確認作業：</label>
+            <select name="" id="setup_check">
+                <option value=""></option>
+                <option value="あり">あり</option>
+                <option value="なし">なし</option>
+            </select>
+        
+        </div>
+
+        <div class="form-item">
+            <label for="remaining_checker">残留品確認者：</label>
+            <input id="remaining_checker" type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="camera_5st_checker">5STカメラ確認者：</label>
+            <input id="camera_5st_checker" type="text">
+        </div>
+
+        <div class="form-item">
+            <label for="remaining_double_checker">残留品Wチェック者：</label>
+            <input id="remaining_double_checker" type="text" placeholder="バーコード読取">
+        </div>
+
+        <!-- 3段目 -->
+        <div class="form-item">
+            <label for="drop_count">落下品数：</label>
+            <input id="drop_count" type="text" placeholder="手入力">
+        </div>
+
+        <div class="form-item note">
+            <label for="abnormal_report">変化点／異常報告：</label>
+            <input id="abnormal_report" type="text">
+        </div>
+    </div>
+
+    <hr>
+
+    <!------- テーブル表示部 ------->
+    <div class="table-area">
+        <h2>良品数／不良品数</h2>
+        <table>
+            <tr>
+                <th>良品数</th>
+                <th>不良数</th>
+            </tr>
+            <tr>
+                <td>1652</td>
+                <td>35</td>
+            </tr>
+        </table>
+
+        <h2>項目別不良数</h2>
+        <table>
+            <tr>
+                <th>検査項目</th>
+                <th>内径</th>
+                <th>φ0.71</th>
+                <th>全長</th>
+                <th>テーパ厚み</th>
+                <th>底</th>
+                <th>厚み</th>
+                <th>側面</th>
+                <th>6st</th>
+            </tr>
+            <tr>
+                <th>初回検査時</th>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>6</td>
+            </tr>
+            <tr>
+                <th>再検査時</th>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>5</td>
+                <td>7</td>
+                <td>31</td>
+            </tr>
+        </table>
+
+        <h2>ステーション別アラーム発生数</h2>
+        <table>
+            <tr>
+                <th>1ST</th>
+                <th>2ST</th>
+                <th>3ST</th>
+                <th>4ST</th>
+                <th>5ST</th>
+                <th>6ST</th>
+                <th>7ST</th>
+                <th>8ST</th>
+                <th>その他</th>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>6</td>
+            </tr>
+        </table>
+    </div>
+
+    <hr>
+
+    <div class="button-area">
+        <button id="update_button">データ更新</button>
+        <button id="register_button">データ登録</button>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>バーコード品番変換サンプル</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>バーコード品番変換サンプル</h1>
+
+    <div class="form-area">
+        <label for="barcode_input">バーコード入力：</label>
+        <input
+            id="barcode_input"
+            type="text"
+            autocomplete="off"
+            autofocus
+            placeholder="バーコードを読み取ってください"
+        >
+    </div>
+
+    <div class="sample-area">
+        <p>対応表</p>
+        <ul>
+            <li>299526-3310 → 品番A</li>
+            <li>299526-3330 → 品番B</li>
+            <li>299526-3340 → 品番C</li>
+            <li>その他 → 不明</li>
+        </ul>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
