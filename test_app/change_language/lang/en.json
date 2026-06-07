@@ -1,0 +1,12 @@
+{
+    "name": "Name:",
+    "age": "Age:",
+    "birthplace": "Birthplace:",
+    "register": "Register",
+    "message": "Registration completed",
+
+    "country_japan": "Japan",
+    "country_america": "America",
+    "country_china": "China",
+    "country_other": "Other"
+}

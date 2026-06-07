@@ -1,0 +1,12 @@
+{
+    "name": "氏名：",
+    "age": "年齢：",
+    "birthplace": "出身地：",
+    "register": "登録",
+    "message": "登録完了",
+
+    "country_japan": "日本",
+    "country_america": "アメリカ",
+    "country_china": "中国",
+    "country_other": "その他"
+}

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+
+    <title>多言語対応サンプル</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- 言語切替ボタン -->
+    <div class="language-buttons">
+
+        <button id="btn-ja">
+            日本語
+        </button>
+
+        <button id="btn-en">
+            ENGLISH
+        </button>
+
+    </div>
+
+    <main class="form-area">
+
+        <!-- 氏名 -->
+        <div class="form-item">
+
+            <!--
+                初期値として日本語を書いておく。
+                JSで後から上書きされる。
+            -->
+            <label id="label-name">
+                氏名：
+            </label>
+
+            <input type="text">
+
+        </div>
+
+        <!-- 年齢 -->
+        <div class="form-item">
+
+            <label id="label-age">
+                年齢：
+            </label>
+
+            <input type="number">
+
+        </div>
+
+        <!-- 出身地 -->
+        <div class="form-item">
+
+            <label id="label-birthplace">
+                出身地：
+            </label>
+
+            <!--
+                valueは内部データ。
+                表示文字だけ翻訳する。
+            -->
+            <select id="birthplace">
+
+                <option value="japan">
+                    日本
+                </option>
+
+                <option value="america">
+                    アメリカ
+                </option>
+
+                <option value="china">
+                    中国
+                </option>
+
+                <option value="other">
+                    その他
+                </option>
+
+            </select>
+
+        </div>
+
+    </main>
+
+    <!-- 登録ボタン -->
+    <button
+        id="register-button"
+        class="register-button"
+    >
+        登録
+    </button>
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>
