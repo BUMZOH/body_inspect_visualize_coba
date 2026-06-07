@@ -3,9 +3,22 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 import webview
+#　独自モジュール
+from db import (
+    init_db,
+    insert_inspection_data,
+)
 
 BASE_DIR = Path(__file__).resolve().parent
 INDEX_HTML = BASE_DIR / "index.html"
+
+
+# 従業員番号対応表（最終的には外部ファイルかDBファイル）
+STAFF_MAP = {
+    "001": "山田太郎",
+    "002": "鈴木次郎",
+    "003": "田中三郎",
+}
 
 
 class AppAPI:
@@ -20,23 +33,54 @@ class AppAPI:
         """画面のデフォルト値を返す。"""
         now = datetime.now()
 
-        # 以下のif文要修正 昼勤条件が違う
-        if now.hour < 20:
+        # 昼勤/夜勤 自動判断
+        if 8 <= now.hour and now.hour < 20:
             shift_name = "昼勤"
         else:
             shift_name = "夜勤"
         print(shift_name)
 
+        # idに対するデフォルト値を渡す(辞書型)
         return {
             "inspection_machine_no": self.inspection_machine_no,
             "record_date": now.strftime("%Y-%m-%d"),
             "shift_name": shift_name,
             "inspection_start_time": self.inspection_start_time.strftime("%Y-%m-%d %H:%M"),
             "inspection_end_time": now.strftime("%Y-%m-%d %H:%M"),
+            "change_point_record": "社内"
+        }
+    
+    def convert_barcode(self, barcode_text: str) -> dict[str, str]:
+        """バーコードで読み取った従業員番号を氏名に変換"""
+        barcode_text.strip()
+        staff_name = STAFF_MAP.get(barcode_text, "不明")
+        print(staff_name)   # Debug
+        return{
+            "barcode_text": barcode_text,
+            "staff_name": staff_name
+        }
+    
+    def get_table_data(self):
+        # 現段階は仮プログラム（固定データ）
+        return {
+            "count_summary": {
+                "ok_count": 120,
+                "ng_count": 8,
+            },
+
+            "ng_count_detail": {
+                "first_check": [1, 0, 2, 0, 1, 0 ,0, 4],
+                "re_check": [0, 0, 1, 0, 0, 0, 0, 0],
+            },
+
+            "alarm_info": [0, 1, 0, 2, 3, 0, 0, 1, 22]
         }
 
 
 def main() -> None:
+
+    init_db()
+
     api = AppAPI()
 
     webview.create_window(

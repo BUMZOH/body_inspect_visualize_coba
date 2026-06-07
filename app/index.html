@@ -11,7 +11,7 @@
 
     <!------- データ入力部 ------->
     <div class="form-area">
-        <!-- 1段目 -->
+        <!-- 1段目 --------------------------------------------------->
         <div class="form-item">
             <label for="inspection_machine_no">検査機番：</label>
             <input id="inspection_machine_no" type="text" readonly>
@@ -33,7 +33,7 @@
 
         <div class="form-item">
             <label for="part_no">品番：</label>
-            <input id="part_no" type="text">
+            <input id="part_no" type="text" placeholder="バーコード入力">
         </div>
 
         <div class="form-item">
@@ -43,7 +43,7 @@
 
         <div class="form-item">
             <label for="nc_machine_no">NC機番：</label>
-            <input id="nc_machine_no" type="text">
+            <input id="nc_machine_no" type="text" placeholder="手入力">
         </div>
 
         <div class="form-item">
@@ -61,10 +61,15 @@
             <input id="inspection_end_time" type="datetime-local" step="60">
         </div>
 
-        <!-- 2段目 -->
+        <!-- 2段目 --------------------------------------------------->
         <div class="form-item">
             <label for="change_point_record">変化点記録：</label>
-            <input id="change_point_record" type="text">
+            <select name="" id="change_point_record">
+                <option value=""></option>
+                <option value="社内">社内</option>
+                <option value="柴田外観あり">柴田外観あり</option>
+                <option value="柴田外観なし">柴田外観なし</option>
+            </select>
         </div>
 
         <div class="form-item">
@@ -78,17 +83,21 @@
 
         <div class="form-item">
             <label for="worker_name">担当者：</label>
-            <input id="worker_name" type="text"placeholder="バーコード読取">
+            <input id="worker_name" type="text" placeholder="バーコード入力">
         </div>
 
         <div class="form-item">
             <label for="appearance_check">外観チェック：</label>
-            <input id="appearance_check" type="text">
+            <select name="" id="appearance_check">
+                <option value=""></option>
+                <option value="正常">正常</option>
+                <option value="異常">異常</option>
+            </select>
         </div>
 
         <div class="form-item">
             <label for="appearance_checker">外観チェック者：</label>
-            <input id="appearance_checker" type="text">
+            <input id="appearance_checker" type="text" placeholder="バーコード入力">
         </div>
 
         <div class="form-item">
@@ -113,10 +122,10 @@
 
         <div class="form-item">
             <label for="remaining_double_checker">残留品Wチェック者：</label>
-            <input id="remaining_double_checker" type="text" placeholder="バーコード読取">
+            <input id="remaining_double_checker" type="text" placeholder="バーコード入力">
         </div>
 
-        <!-- 3段目 -->
+        <!-- 3段目 --------------------------------------------------->
         <div class="form-item">
             <label for="drop_count">落下品数：</label>
             <input id="drop_count" type="text" placeholder="手入力">
@@ -133,19 +142,19 @@
     <!------- テーブル表示部 ------->
     <div class="table-area">
         <h2>良品数／不良品数</h2>
-        <table>
+        <table id="count_summary">
             <tr>
                 <th>良品数</th>
                 <th>不良数</th>
             </tr>
             <tr>
-                <td>1652</td>
-                <td>35</td>
+                <td>0</td>
+                <td>0</td>
             </tr>
         </table>
 
         <h2>項目別不良数</h2>
-        <table>
+        <table id="ng_count_detail">
             <tr>
                 <th>検査項目</th>
                 <th>内径</th>
@@ -166,7 +175,7 @@
                 <td>0</td>
                 <td>0</td>
                 <td>0</td>
-                <td>6</td>
+                <td>0</td>
             </tr>
             <tr>
                 <th>再検査時</th>
@@ -175,14 +184,14 @@
                 <td>0</td>
                 <td>0</td>
                 <td>0</td>
-                <td>5</td>
-                <td>7</td>
-                <td>31</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
             </tr>
         </table>
 
         <h2>ステーション別アラーム発生数</h2>
-        <table>
+        <table id="alarm_info">
             <tr>
                 <th>1ST</th>
                 <th>2ST</th>
@@ -195,7 +204,6 @@
                 <th>その他</th>
             </tr>
             <tr>
-                <td>4</td>
                 <td>0</td>
                 <td>0</td>
                 <td>0</td>
@@ -203,7 +211,8 @@
                 <td>0</td>
                 <td>0</td>
                 <td>0</td>
-                <td>6</td>
+                <td>0</td>
+                <td>0</td>
             </tr>
         </table>
     </div>
@@ -211,6 +220,7 @@
     <hr>
 
     <div class="button-area">
+        <button id="initialize_button">データ初期化</button>
         <button id="update_button">データ更新</button>
         <button id="register_button">データ登録</button>
     </div>

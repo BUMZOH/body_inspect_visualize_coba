@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>担当者入力サンプル</title>
+</head>
+<body>
+
+    <div>
+        <label for="worker_a">
+            作業A担当者：
+        </label>
+        <input
+            id="worker_a"
+            type="text"
+        >
+    </div>
+
+    <br>
+
+    <div>
+        <label for="worker_b">
+            作業B担当者：
+        </label>
+        <input
+            id="worker_b"
+            type="text"
+        >
+    </div>
+
+    <br>
+
+    <div>
+        <label for="worker_c">
+            作業C担当者：
+        </label>
+        <input
+            id="worker_c"
+            type="text"
+        >
+    </div>
+
+    <script>
+
+        document.getElementById(
+            "worker_a"
+        ).addEventListener(
+            "keydown",
+            function(event) {
+
+                if (
+                    event.key === "Enter"
+                ) {
+
+                    const workerName =
+                        this.value;
+
+                    document.getElementById(
+                        "worker_b"
+                    ).value = workerName;
+
+                    document.getElementById(
+                        "worker_c"
+                    ).value = workerName;
+
+                }
+
+            }
+        );
+
+    </script>
+
+</body>
+</html>
+
+
+
