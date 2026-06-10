@@ -1,0 +1,43 @@
+{
+    "update_info": {
+        "last_update_date": "2026-06-10",
+        "comment": "add new machine"
+    },
+
+
+    "machines": {
+        "001": {
+            "description": "ボディ検査装置1号機",
+            "plc_ip_address": "192.168.8.1",
+            "tp_ip_address": "192.168.8.2",
+            "xg_ip_address": "192.168.8.3",
+            "inspection_items": {
+                "total_length": "DM1000",
+                "outer_diameter": "DM1002",
+                "inner_diameter": "DM1004",
+                "thickness": "DM1006"
+            }
+        },
+
+        "002": {
+            "description": "ボディ検査装置2号機",
+            "plc_ip_address": "192.168.8.11",
+            "tp_ip_address": "192.168.8.12",
+            "xg_ip_address": "192.168.8.13",
+            "inspection_items": {
+                "total_length": "DM1000",
+                "outer_diameter": "DM1002",
+                "inner_diameter": "DM1004"
+            }
+        }
+    },
+
+
+    "japanese_names": {
+        "total_length": "全長",
+        "outer_diameter": "外径",
+        "inner_diameter": "内径",
+        "thickness": "厚さ"
+    }
+
+}

@@ -1,25 +1,34 @@
 from __future__ import annotations
-
 from datetime import datetime
 from pathlib import Path
 import webview
+import json
 #　独自モジュール
 from db import (
     init_db,
     insert_inspection_data,
 )
 
+# CONSTANTS -----------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent
 INDEX_HTML = BASE_DIR / "index.html"
+STAFF_FILE = BASE_DIR / "staff.json"
+
+# GLOBAL VARIABLES ----------------------------------------
+staff = {}
 
 
-# 従業員番号対応表（最終的には外部ファイルかDBファイル）
-STAFF_MAP = {
-    "001": "山田太郎",
-    "002": "鈴木次郎",
-    "003": "田中三郎",
-}
 
+def load_staff_info():
+    global staff
+
+    if not STAFF_FILE.exists():
+        print("staff.jsonが見つかりません")
+        return
+
+    with STAFF_FILE.open(mode='r', encoding='UTF-8') as f:
+        staff = json.load(f)
+    
 
 class AppAPI:
     def __init__(self) -> None:
@@ -53,7 +62,7 @@ class AppAPI:
     def convert_barcode(self, barcode_text: str) -> dict[str, str]:
         """バーコードで読み取った従業員番号を氏名に変換"""
         barcode_text.strip()
-        staff_name = STAFF_MAP.get(barcode_text, "不明")
+        staff_name = staff.get(barcode_text, "不明")
         print(staff_name)   # Debug
         return{
             "barcode_text": barcode_text,
@@ -78,7 +87,8 @@ class AppAPI:
 
 
 def main() -> None:
-
+    load_staff_info()    # 従業員番号-氏名 対応表読み込み
+    
     init_db()
 
     api = AppAPI()

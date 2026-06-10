@@ -137,8 +137,13 @@ async function convertBarcode(inputElement) {
     const barcodeText = inputElement.value;
 
     const result = await window.pywebview.api.convert_barcode(barcodeText);
-    console.log(result);
+    // console.log(result);
     inputElement.value = result.staff_name;
+
+    // 担当者に入力された場合は外観検査者にもコピー
+    if (inputElement.id === "worker_name") {
+        document.getElementById("appearance_checker").value = result.staff_name;
+    }
 }
 
 
