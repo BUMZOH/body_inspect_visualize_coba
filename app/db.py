@@ -38,10 +38,49 @@ def init_db():
 
         remaining_checker TEXT,
         camera_5st_checker TEXT,
+        remaining_double_checker TEXT,
 
         drop_count INTEGER,
 
-        abnormal_report TEXT
+        abnormal_report TEXT,
+
+
+        ok_count INTEGER,
+        ng_count INTEGER,
+
+        inner_d_ngcount1 INTEGER,
+        inner_d_ngcount2 INTEGER,
+
+        phi071_ngcount1 INTEGER,
+        phi071_ngcount2 INTEGER,
+
+        total_length_ngcount1 INTEGER,
+        total_length_ngcount2 INTEGER,
+
+        taper_thickness_ngcount1 INTEGER,
+        taper_thickness_ngcount2 INTEGER,
+
+        bottom_ngcount1 INTEGER,
+        bottom_ngcount2 INTEGER,
+
+        thickness_ngcount1 INTEGER,
+        thickness_ngcount2 INTEGER,
+
+        side_visual_ngcount1 INTEGER,
+        side_visual_ngcount2 INTEGER,
+
+        st6_ngcount1 INTEGER,
+        st6_ngcount2 INTEGER,
+
+        st1_alarm_count INTEGER,
+        st2_alarm_count INTEGER,
+        st3_alarm_count INTEGER,
+        st4_alarm_count INTEGER,
+        st5_alarm_count INTEGER,
+        st6_alarm_count INTEGER,
+        st7_alarm_count INTEGER,
+        st8_alarm_count INTEGER,
+        others_alarm_count INTEGER
 
     );
     """
@@ -53,107 +92,107 @@ def init_db():
         conn.commit()
 
 
-def insert_inspection_data(data):
+def insert_record(data: dict):
 
-    sql = """
+    columns = ", ".join(data.keys())
+
+    placeholders = ", ".join(
+        f":{key}"
+        for key in data.keys()
+    )
+
+    sql = f"""
     INSERT INTO inspection_data (
-
-        inspection_machine_no,
-        record_date,
-        shift_name,
-
-        part_no,
-        nc_process_date,
-        nc_machine_no,
-        monthly_serial_no,
-
-        inspection_start_time,
-        inspection_end_time,
-
-        change_point_record,
-        camera_threshold,
-
-        worker_name,
-
-        appearance_check,
-        appearance_checker,
-
-        setup_check,
-
-        remaining_checker,
-        camera_5st_checker,
-
-        drop_count,
-
-        abnormal_report
-
+        {columns}
     )
     VALUES (
-
-        :inspection_machine_no,
-        :record_date,
-        :shift_name,
-
-        :part_no,
-        :nc_process_date,
-        :nc_machine_no,
-        :monthly_serial_no,
-
-        :inspection_start_time,
-        :inspection_end_time,
-
-        :change_point_record,
-        :camera_threshold,
-
-        :worker_name,
-
-        :appearance_check,
-        :appearance_checker,
-
-        :setup_check,
-
-        :remaining_checker,
-        :camera_5st_checker,
-
-        :drop_count,
-
-        :abnormal_report
-
+        {placeholders}
     )
     """
 
     with sqlite3.connect(DB_FILE) as conn:
 
-        conn.execute(
-            sql,
-            data
-        )
+        conn.execute(sql, data)
 
         conn.commit()
 
 
+
 if __name__ == "__main__":
+    init_db()
     sample_data = {
+
         "inspection_machine_no": 1,
-        "record_date": "2026-06-07", 
-        "shift_name": "昼勤", 
-        "part_no": "ABC-123", 
-        "nc_process_date": "2026-06-07", 
-        "nc_machine_no": 5, 
-        "monthly_serial_no": 1001, 
-        "inspection_start_time": "2026-06-07 08:00:00", 
-        "inspection_end_time": "2026-06-07 08:15:00", 
-        "change_point_record": "なし", 
-        "camera_threshold": "80", 
-        "worker_name": "田中", 
-        "appearance_check": "良", 
-        "appearance_checker": "鈴木", 
-        "setup_check": "OK", 
-        "remaining_checker": "佐藤", 
-        "camera_5st_checker": "高橋", 
-        "drop_count": 0, 
-        "abnormal_report": ""
+        "record_date": "2026-06-07",
+        "shift_name": "昼勤",
+
+        "part_no": "ABC-123",
+        "nc_process_date": "2026-06-07",
+        "nc_machine_no": 5,
+        "monthly_serial_no": 1001,
+
+        "inspection_start_time": "2026-06-07 08:00:00",
+        "inspection_end_time": "2026-06-07 08:15:00",
+
+        "change_point_record": "なし",
+        "camera_threshold": "80",
+
+        "worker_name": "田中",
+
+        "appearance_check": "良",
+        "appearance_checker": "鈴木",
+
+        "setup_check": "OK",
+
+        "remaining_checker": "佐藤",
+        "camera_5st_checker": "高橋",
+        "remaining_double_checker": "神野",
+
+        "drop_count": 0,
+
+        "abnormal_report": "",
+
+        # 集計
+        "ok_count": 997,
+        "ng_count": 3,
+
+        # NG内訳
+        "inner_d_ngcount1": 1,
+        "inner_d_ngcount2": 0,
+
+        "phi071_ngcount1": 0,
+        "phi071_ngcount2": 1,
+
+        "total_length_ngcount1": 0,
+        "total_length_ngcount2": 0,
+
+        "taper_thickness_ngcount1": 1,
+        "taper_thickness_ngcount2": 0,
+
+        "bottom_ngcount1": 0,
+        "bottom_ngcount2": 0,
+
+        "thickness_ngcount1": 0,
+        "thickness_ngcount2": 0,
+
+        "side_visual_ngcount1": 0,
+        "side_visual_ngcount2": 0,
+
+        "st6_ngcount1": 0,
+        "st6_ngcount2": 0,
+
+        # アラーム回数
+        "st1_alarm_count": 0,
+        "st2_alarm_count": 1,
+        "st3_alarm_count": 0,
+        "st4_alarm_count": 0,
+        "st5_alarm_count": 2,
+        "st6_alarm_count": 0,
+        "st7_alarm_count": 0,
+        "st8_alarm_count": 0,
+
+        "others_alarm_count": 0,
     }
 
-    insert_inspection_data(sample_data)
+    insert_record(sample_data)
     print("データ追加しました")

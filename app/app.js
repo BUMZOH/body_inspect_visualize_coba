@@ -11,7 +11,6 @@ function setInputValue(id, value) {
 
 function applyDefaultValues(defaultValues) {
     setInputValue("inspection_machine_no", defaultValues.inspection_machine_no);
-    console.log(defaultValues.record_date);
     setInputValue("record_date", defaultValues.record_date);
     setInputValue("shift_name", defaultValues.shift_name);
     setInputValue("inspection_start_time", defaultValues.inspection_start_time);
@@ -27,36 +26,21 @@ async function updateDefaultValues() {
 async function updateTables() {
     const tableData = await window.pywebview.api.get_table_data();
 
-    updateCountSummary(tableData.count_summary);
-    updateNgCountDetail(tableData.ng_count_detail);
-    updateAlarmInfo(tableData.alarm_info);
+    applyTableData(tableData);
 }
 
-function updateCountSummary(data) {
-    const table = document.getElementById("count_summary");
-    table.rows[1].cells[0].textContent = data.ok_count;
-    table.rows[1].cells[1].textContent = data.ng_count;
-}
+function applyTableData(tableData) {
+    // tableDataは<td>のidとそれに対する値が格納されている(辞書型)
+    for (const [id, value] of Object.entries(tableData)) {
 
-function updateNgCountDetail(data) {
-    const table = document.getElementById("ng_count_detail");
-    const firstCheckValues = data.first_check;
-    const reCheckValues = data.re_check;
+        const cell = document.getElementById(id);
 
-    for (let i=0; i<firstCheckValues.length; i++) {
-        table.rows[1].cells[i+1].textContent = firstCheckValues[i];
-    }
-    
-    for (let i=0; i<reCheckValues.length; i++) {
-        table.rows[2].cells[i+1].textContent = reCheckValues[i];
-    }
-}
+        if (!cell) {
+            console.error(`セルが見つかりません: ${id}`);
+            continue;
+        }
 
-function updateAlarmInfo(data) {
-    const table = document.getElementById("alarm_info");
-
-    for (let i=0; i<data.length; i++) {
-        table.rows[1].cells[i].textContent = data[i];
+        cell.textContent = value;
     }
 }
 
@@ -69,6 +53,53 @@ function resetAll() {
         td.textContent = "0";
     });
 }
+
+function getInputData() {
+    const data = {};
+
+    document
+        .querySelectorAll("input, select")
+        .forEach((element) => {
+            if (!element.id) {
+                return;
+            }
+
+            data[element.id] = element.value;
+        });
+    
+    return data;
+}
+
+function getTableData() {
+    const data ={};
+
+    document
+        .querySelectorAll(".db-item")
+        .forEach(elem => {
+            data[elem.id] = elem.textContent.trim()
+        });
+
+    return data;
+}
+
+async function registerData() {
+    const inputData = getInputData();
+    const tableData = getTableData();
+    // JSのスプレッド構文に注意
+    const data = {
+        ...inputData,
+        ...tableData,
+    };
+
+    const result = await window.pywebview.api.register_data(data);
+    if (result.ok) {
+        alert(result.message);
+    } else {
+        alert("登録に失敗しました。\n" + result.message);
+    }
+
+}
+
 
 
 // ボタンへのイベントハンドラ登録
@@ -85,6 +116,13 @@ window.addEventListener("pywebviewready", () => {
     initializeButton.addEventListener("click", () => {
         resetAll();
     });
+
+    // データ登録ボタン
+    const registerButton = document.getElementById("register_button");
+    registerButton.addEventListener("click", () => {
+        registerData()
+    });
+
 });
 
 document.getElementById("appearance_check").addEventListener(
@@ -137,7 +175,6 @@ async function convertBarcode(inputElement) {
     const barcodeText = inputElement.value;
 
     const result = await window.pywebview.api.convert_barcode(barcodeText);
-    // console.log(result);
     inputElement.value = result.staff_name;
 
     // 担当者に入力された場合は外観検査者にもコピー
