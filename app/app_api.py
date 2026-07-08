@@ -3,50 +3,16 @@ from pathlib import Path
 import json
 #　独自モジュール
 from db import insert_record
+from common_lib_mw import kv_com
 
 
 # CONSTANTS -----------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent
 STAFF_FILE = BASE_DIR / "staff.json"
+CONFIG_FILE = BASE_DIR / "config.json"
+
 
 # FOR VALIDATION ----
-INTEGER_COLUMNS = {
-    "inspection_machine_no",
-    "nc_machine_no",
-    "monthly_serial_no",
-    "drop_count",
-
-    "ok_count",
-    "ng_count",
-
-    "inner_d_ngcount1",
-    "inner_d_ngcount2",
-    "phi071_ngcount1",
-    "phi071_ngcount2",
-    "total_length_ngcount1",
-    "total_length_ngcount2",
-    "taper_thickness_ngcount1",
-    "taper_thickness_ngcount2",
-    "bottom_ngcount1",
-    "bottom_ngcount2",
-    "thickness_ngcount1",
-    "thickness_ngcount2",
-    "side_visual_ngcount1",
-    "side_visual_ngcount2",
-    "st6_ngcount1",
-    "st6_ngcount2",
-
-    "st1_alarm_count",
-    "st2_alarm_count",
-    "st3_alarm_count",
-    "st4_alarm_count",
-    "st5_alarm_count",
-    "st6_alarm_count",
-    "st7_alarm_count",
-    "st8_alarm_count",
-    "others_alarm_count",
-}
-
 DATETIME_COLUMNS = {
     "inspection_start_time",
     "inspection_end_time",
@@ -64,6 +30,7 @@ REQUIRED_COLUMNS = {
 
 # GLOBAL VARIABLES --------------------------------------------------
 staff = {}
+config = {}
 
 # FUNCTIONS ---------------------------------------------------------
 def load_staff_info():
@@ -75,6 +42,17 @@ def load_staff_info():
 
     with STAFF_FILE.open(mode='r', encoding='UTF-8') as f:
         staff = json.load(f)
+
+
+def load_config():
+    global config
+
+    if not CONFIG_FILE.exists():
+        print("config.jsonが見つかりません")
+        return
+
+    with CONFIG_FILE.open(mode='r', encoding='UTF-8') as f:
+        config = json.load(f)
 
 
 def convert_empty_to_none(value):
@@ -111,14 +89,40 @@ def convert_datetime(value):
     return value
 
 
+def get_integer_columns() -> set[str]:
+    # (辞書データの結合に注意)
+    return (
+        {
+            "inspection_machine_no",
+            "nc_machine_no",
+            "monthly_serial_no",
+            "drop_count",
+        }
+        | set(config["plc_count_devices"].keys())
+        | {
+            "st1_alarm_count",
+            "st2_alarm_count",
+            "st3_alarm_count",
+            "st4_alarm_count",
+            "st5_alarm_count",
+            "st6_alarm_count",
+            "st7_alarm_count",
+            "st8_alarm_count",
+            "others_alarm_count",
+        }
+    )
+
+
 def normalize_record(data: dict) -> tuple[dict, list[str]]:
     errors = validate_required(data)
     record = {}
+    integer_columns = get_integer_columns()
+
 
     for key, value in data.items():
         value = convert_empty_to_none(value)
 
-        if key in INTEGER_COLUMNS:
+        if key in integer_columns:
             try:
                 # Noneなら0、None以外ならint変換
                 record[key] = int(value) if value is not None else 0
@@ -135,20 +139,59 @@ def normalize_record(data: dict) -> tuple[dict, list[str]]:
     return record, errors
 
 
+def get_inspection_start_time(machine_no: str):
+    """ PLCから検査開始時間を取得 """
+    plc_ip_address = config["machines"][machine_no]["plc_ip_address"]
+    
+    year = int(kv_com.read_device_u(plc_ip_address, "EM10000"))
+    month = int(kv_com.read_device_u(plc_ip_address, "EM10001"))
+    day = int(kv_com.read_device_u(plc_ip_address, "EM10002"))
+    hour = int(kv_com.read_device_u(plc_ip_address, "EM10003"))
+    minute = int(kv_com.read_device_u(plc_ip_address, "EM10004"))
+
+    dt = datetime(year, month, day, hour, minute)
+    print(dt.strftime("%Y-%m-%d %H-%M"))
+
+    return dt.strftime("%Y-%m-%d %H:%M")
 
 
+def search_record_waiting_machine() -> list[str]:
+    """「記録待ち(EM10011=ON)」になっている機械を探す
+        該当なし:   空のリスト
+        複数台該当: 要素2個以上のリスト
+        ※正常時は要素数1個のリスト
+    """
+    # (以下作成予定)
+    
+    return ["416"]
+
+
+def debug_dump(data):
+    """JSONデータ結果確認用"""
+    print(
+        json.dumps(
+            data,
+            ensure_ascii=False,
+            indent=4,
+        )
+    )
+
+
+#---- API CLASS -----------------------------------------------------
 class AppAPI:
     def __init__(self) -> None:
-        # 機械番号はPLC通信で「記録待ち」になっている設備をサーチする
-        self.inspection_machine_no = "552"  # DummyData
+        load_staff_info()   # 従業員番号-氏名 対応表読み込み
+        load_config()       # 設備関連情報読み込み
 
-        # 検査開始時間はPLCのデバイスから取得する
-        self.inspection_start_time = datetime.now() # テスト用としてアプリ起動時間
 
     def get_default_values(self) -> dict[str, str]:
         """画面のデフォルト値を返す。"""
-        now = datetime.now()
 
+        # 「記録待ち(EM10011=ON)」になっている機械を探す ※※※(以下ダミー関数)
+        # (戻り値が空/複数個の場合を考えること)
+        inspection_machine_no = search_record_waiting_machine()[0]
+
+        now = datetime.now()
         # 昼勤/夜勤 自動判断
         if 8 <= now.hour and now.hour < 20:
             shift_name = "昼勤"
@@ -157,10 +200,10 @@ class AppAPI:
 
         # idに対するデフォルト値を渡す(辞書型)
         return {
-            "inspection_machine_no": self.inspection_machine_no,
+            "inspection_machine_no": inspection_machine_no,
             "record_date": now.strftime("%Y-%m-%d"),
             "shift_name": shift_name,
-            "inspection_start_time": self.inspection_start_time.strftime("%Y-%m-%d %H:%M"),
+            "inspection_start_time": get_inspection_start_time(inspection_machine_no),
             "inspection_end_time": now.strftime("%Y-%m-%d %H:%M"),
             "change_point_record": "社内"
         }
@@ -175,31 +218,25 @@ class AppAPI:
         }
     
     
-    def get_table_data(self):
-        # 現段階は仮プログラム（固定データ）→ PLCから読み取る
-        return {
+    def get_table_data(self) -> dict:
 
-            "ok_count": 120,
-            "ng_count": 8,
+        # "記録待ち"になっているPLCを取得
+        target_plc = search_record_waiting_machine()[0]
+        ip_address = config["machines"][target_plc]["plc_ip_address"]
+        # print(f"plc_ip_address={ip_address}")   # Debug
+        
+        table_data = {}
 
-            "inner_d_ngcount1": 1,
-            "phi071_ngcount1": 0,
-            "total_length_ngcount1": 2,
-            "taper_thickness_ngcount1": 0,
-            "bottom_ngcount1": 1,
-            "thickness_ngcount1": 0,
-            "side_visual_ngcount1": 0,
-            "st6_ngcount1": 4,
+        # PLCカウント用デバイスの値受信
+        count_devices = config["plc_count_devices"]
+        for key, value in count_devices.items():
+            device = count_devices[key]
+            res = kv_com.read_device_d(ip_address, device)
+            # print(f"{key} : {device} = {res}")    # debug
+            table_data[key] = int(res)
 
-            "inner_d_ngcount2": 0,
-            "phi071_ngcount2": 0,
-            "total_length_ngcount2": 1,
-            "taper_thickness_ngcount2": 0,
-            "bottom_ngcount2": 0,
-            "thickness_ngcount2": 0,
-            "side_visual_ngcount2": 0,
-            "st6_ngcount2": 0,
-
+        # アラーム発生数データはダミー(今後作成)
+        alarm_count_data = {
             "st1_alarm_count": 0,
             "st2_alarm_count": 1,
             "st3_alarm_count": 0,
@@ -210,6 +247,11 @@ class AppAPI:
             "st8_alarm_count": 1,
             "others_alarm_count": 22,
         }
+
+        table_data |= alarm_count_data  # データ結合
+        debug_dump(table_data)  # debug
+
+        return table_data
 
 
     def register_data(self,data: dict):

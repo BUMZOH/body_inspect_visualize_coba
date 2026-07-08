@@ -66,12 +66,19 @@ def init_db():
         thickness_ngcount1 INTEGER,
         thickness_ngcount2 INTEGER,
 
-        side_visual_ngcount1 INTEGER,
-        side_visual_ngcount2 INTEGER,
+        side_visual1_ngcount1 INTEGER,
+        side_visual1_ngcount2 INTEGER,
 
-        st6_ngcount1 INTEGER,
-        st6_ngcount2 INTEGER,
+        side_visual2_ngcount1 INTEGER,
+        side_visual2_ngcount2 INTEGER,
 
+        phi2435_depth_ngcount1 INTEGER,
+        phi2435_depth_ngcount2 INTEGER,
+
+        phi14_depth_ngcount1 INTEGER,
+        phi14_depth_ngcount2 INTEGER,
+
+        
         st1_alarm_count INTEGER,
         st2_alarm_count INTEGER,
         st3_alarm_count INTEGER,
@@ -154,7 +161,7 @@ if __name__ == "__main__":
 
         # 集計
         "ok_count": 997,
-        "ng_count": 3,
+        "ng_count": 33,
 
         # NG内訳
         "inner_d_ngcount1": 1,
@@ -175,11 +182,17 @@ if __name__ == "__main__":
         "thickness_ngcount1": 0,
         "thickness_ngcount2": 0,
 
-        "side_visual_ngcount1": 0,
-        "side_visual_ngcount2": 0,
+        "side_visual1_ngcount1": 0,
+        "side_visual1_ngcount2": 0,
 
-        "st6_ngcount1": 0,
-        "st6_ngcount2": 0,
+        "side_visual2_ngcount1": 0,
+        "side_visual2_ngcount2": 0,
+
+        "phi2435_depth_ngcount1": 0,
+        "phi2435_depth_ngcount2": 0,
+
+        "phi14_depth_ngcount1": 5,
+        "phi14_depth_ngcount2": 6,
 
         # アラーム回数
         "st1_alarm_count": 0,

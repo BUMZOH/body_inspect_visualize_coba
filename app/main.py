@@ -3,7 +3,7 @@ from pathlib import Path
 import webview
 #　独自モジュール
 from db import init_db
-from app_api import AppAPI, load_staff_info
+from app_api import AppAPI
 
 
 # CONSTANTS -----------------------------------------------
@@ -12,7 +12,6 @@ INDEX_HTML = BASE_DIR / "index.html"
 
 
 def main() -> None:
-    load_staff_info()    # 従業員番号-氏名 対応表読み込み
     
     init_db()
 
