@@ -20,6 +20,8 @@ device_map = {
     "EM10118": 118,
     "EM10120": 120,
     "EM10122": 122,
+    "EM10124": 124,
+
 
     # 2回目検査結果
     "EM10204": 204,
@@ -32,9 +34,10 @@ device_map = {
     "EM10218": 218,
     "EM10220": 220,
     "EM10222": 222,
+    "EM10224": 224,
 }
 
-if False:
+if True:
     for key, value in device_map.items():
         print(key,value)
         kv_com.write_device_d(plc_ip_address, key, value)

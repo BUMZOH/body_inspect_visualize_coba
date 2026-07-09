@@ -38,23 +38,26 @@
         "taper_thickness_ngcount1": "EM10110",
         "taper_thickness_ngcount2": "EM10210",
 
-        "bottom_ngcount1": "EM10112",
-        "bottom_ngcount2": "EM10212",
+        "level_gap_ngcount1": "EM10112",
+        "level_gap_ngcount2": "EM10212",
 
-        "thickness_ngcount1": "EM10114",
-        "thickness_ngcount2": "EM10214",
+        "bottom_ngcount1": "EM10114",
+        "bottom_ngcount2": "EM10214",
 
-        "side_visual1_ngcount1": "EM10116",
-        "side_visual1_ngcount2": "EM10216",
+        "thickness_ngcount1": "EM10116",
+        "thickness_ngcount2": "EM10216",
 
-        "side_visual2_ngcount1": "EM10118",
-        "side_visual2_ngcount2": "EM10218",
+        "side_visual1_ngcount1": "EM10118",
+        "side_visual1_ngcount2": "EM10218",
 
-        "phi2435_depth_ngcount1": "EM10120",
-        "phi2435_depth_ngcount2": "EM10220",
+        "side_visual2_ngcount1": "EM10120",
+        "side_visual2_ngcount2": "EM10220",
 
-        "phi14_depth_ngcount1": "EM10122",
-        "phi14_depth_ngcount2": "EM10222"
+        "phi2435_depth_ngcount1": "EM10122",
+        "phi2435_depth_ngcount2": "EM10222",
+
+        "phi14_depth_ngcount1": "EM10124",
+        "phi14_depth_ngcount2": "EM10224"
     },
 
 

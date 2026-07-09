@@ -60,6 +60,9 @@ def init_db():
         taper_thickness_ngcount1 INTEGER,
         taper_thickness_ngcount2 INTEGER,
 
+        level_gap_ngcount1 INTEGER,
+        level_gap_ngcount2 INTEGER,
+        
         bottom_ngcount1 INTEGER,
         bottom_ngcount2 INTEGER,
 
@@ -181,6 +184,9 @@ if __name__ == "__main__":
 
         "thickness_ngcount1": 0,
         "thickness_ngcount2": 0,
+
+        "level_gap_ngcount1": 10,
+        "level_gap_ngcount2": 15,
 
         "side_visual1_ngcount1": 0,
         "side_visual1_ngcount2": 0,
