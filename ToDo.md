@@ -14,7 +14,7 @@
 - 「検査記録待ち」設備のサーチ機能(search_record_waiting_machine)
 - common_lib 2ワードデバイスのread/write実装 ★
 - VT異常履歴DB登録処理→光和新江工場PG参照→新方式を採用する予定(VT不要版)
-
+- kv_com 2Wデバイス連続読み出し関数作成
 
 ## DB操作
 

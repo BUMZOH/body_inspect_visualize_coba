@@ -3,6 +3,17 @@ from common_lib_mw import kv_com
 
 plc_ip_address = "192.168.8.1"
 
+alarm = kv_com.dl_alarm_comment(plc_ip_address)
+print(alarm)
+
+
+res = kv_com.write_device_d(plc_ip_address, "DM100", 445)
+print(res)
+
+res = kv_com.read_devices_d(plc_ip_address, "DM100", 10)
+print(res)
+print(kv_com.kv_seconds_to_datetime_str(res[0]))
+exit()
 
 # カウンタデバイス設定 ------------------------------------
 device_map = {

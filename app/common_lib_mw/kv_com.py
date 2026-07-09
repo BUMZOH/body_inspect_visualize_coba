@@ -7,7 +7,7 @@ import os
 import socket
 from ftplib import FTP
 from ping3 import ping 
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import re
 
 # Definition of Const ------------------------------------------------------
@@ -147,6 +147,20 @@ def read_device_d(ip_add:str, device:str)->str:
     """
     cmd = 'RD ' + device +'.D\r'
     return com_with_plc(ip_add, cmd)
+
+
+def read_devices_d(ip_add: str, device: str, dev_number: int) -> list[int]:
+    """PLCのデバイス連続データ読み込み
+    データ形式は D:10進数32ビット符号なし
+    最大500個まで対応(キーエンス標準制限)
+    """
+    cmd = f'RDS {device}.D {dev_number}\r'
+    res = com_with_plc(ip_add, cmd)
+    
+    if res in ("E1", "E2"):
+        raise RuntimeError(f"PLC通信エラー: {res}")
+
+    return [int(x) for x in res.split()]
 
 
 def write_device_d(ip_add:str, device:str, value:int)->str:
@@ -356,6 +370,15 @@ def decode_plc_date(date_value: int) -> str:
     return dt.strftime("%Y-%m-%d")
 
 
+def kv_seconds_to_datetime_str(seconds: int) -> str:
+    """
+    キーエンスPLCのSEC命令で取得した秒数を
+    YYYY-MM-DD HH:MM:SS形式へ変換する。
+    """
+    base_datetime = datetime(2000, 1, 1)
+    result_datetime = base_datetime + timedelta(seconds=seconds)
+    return result_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
 
 # テストコード(動作確認用) -----------------------------------------------------------------
 if __name__=='__main__':
@@ -402,6 +425,11 @@ if __name__=='__main__':
 
 """
 ----- 更新履歴 -----
+
+2026.7.9
+以下関数追加
+    read_devices_d
+    kv_seconds_to_datetime_str
 
 2026.7.8
 以下関数追加
