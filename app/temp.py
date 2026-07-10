@@ -3,9 +3,29 @@ from common_lib_mw import kv_com
 
 plc_ip_address = "192.168.8.1"
 
-# alarm = kv_com.dl_alarm_comment(plc_ip_address)
-# print(alarm)
 
+#--- アラーム履歴関係 ---
+if False:
+    #--- アラーム発生ON→OFF
+    res = kv_com.
+
+    # --- 値格納 ----
+    device_map = {
+
+    }
+
+    # --- 値確認 ---
+    res = kv_com.read_devices_d(plc_ip_address, "EM11000", 10)
+    print(res)
+
+    exit()
+
+
+#--- アラームコメント確認 ---
+if True:
+    alarm = kv_com.dl_alarm_comment(plc_ip_address)
+    print(alarm)
+    exit()
 
 # res = kv_com.write_device_d(plc_ip_address, "DM100", 445)
 # print(res)
