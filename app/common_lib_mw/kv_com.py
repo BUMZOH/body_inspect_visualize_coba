@@ -80,42 +80,7 @@ def read_devices_u(ip_add: str, device: str, dev_number: int) -> list[int]:
     データ形式は U:10進数16ビット符号なし
     最大5000個まで対応
     """
-    max_total_number = 5000
-    max_once_number = 1000
-
-    if not 1 <= dev_number <= max_total_number:
-        raise ValueError(
-            f"指定されたデバイス数が不正です: {dev_number}"
-        )
-    
-    values: list[int] = []  # 型ヒント付き初期化
-
-    read_count = 0
-
-    while read_count < dev_number:
-        read_number = min(max_once_number, dev_number - read_count)
-        start_device = add_device_number(device, read_count)
-
-        cmd = f"RDS {start_device}.U {read_number}\r"
-        res = com_with_plc(ip_add, cmd)
-
-        if res in ("E1", "E2"):
-            raise RuntimeError(f"PLC通信エラー: {res}")
-        
-        try:
-            partial_values = [int(x) for x in res.split()]
-        except ValueError as e:
-            raise RuntimeError("PLC応答を数値に変換できません: {res}") from e
-        
-        if len(partial_values) != read_number:
-            raise RuntimeError(
-                f"PLC応答数が不正です: 要求={read_number}, 実際={len(partial_values)}, 応答={res}"
-            )
-        
-        values.extend(partial_values)
-        read_count += read_number
-
-    return values
+    return _read_devices(ip_add, device, dev_number, "U")
 
 
 def write_device_u(ip_add:str, device:str, value:int)->str:
@@ -152,15 +117,9 @@ def read_device_d(ip_add:str, device:str)->str:
 def read_devices_d(ip_add: str, device: str, dev_number: int) -> list[int]:
     """PLCのデバイス連続データ読み込み
     データ形式は D:10進数32ビット符号なし
-    最大500個まで対応(キーエンス標準制限)
+    最大5000個まで対応
     """
-    cmd = f'RDS {device}.D {dev_number}\r'
-    res = com_with_plc(ip_add, cmd)
-    
-    if res in ("E1", "E2"):
-        raise RuntimeError(f"PLC通信エラー: {res}")
-
-    return [int(x) for x in res.split()]
+    return _read_devices(ip_add, device, dev_number, "D")
 
 
 def write_device_d(ip_add:str, device:str, value:int)->str:
@@ -380,6 +339,68 @@ def kv_seconds_to_datetime_str(seconds: int) -> str:
     return result_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 
+def _read_devices(
+        ip_add: str,
+        device: str,
+        dev_number: int,
+        data_type: str
+) -> list[int]:
+    """PLCのデバイス連続データ読み込み共通処理"""
+    max_total_number = 5000
+
+    if not 1 <= dev_number <= max_total_number:
+        raise ValueError(
+            f"指定されたデバイス数が不正です: {dev_number}"
+        )
+    
+    if data_type == "U":
+        max_once_number = 1000
+        device_step = 1
+
+    elif data_type == "D":
+        max_once_number = 500
+        device_step = 2
+
+    else:
+        raise ValueError(
+            f"対応していないデータ形式です: {data_type}"
+        )
+
+    values: list[int] = []
+    read_count = 0
+
+    while read_count < dev_number:
+        read_number = min(max_once_number, dev_number - read_count)
+        device_offset = read_count * device_step
+        start_device = add_device_number(device, device_offset)
+
+        cmd = f"RDS {start_device}.{data_type} {read_number}\r"
+        res = com_with_plc(ip_add, cmd)
+
+        if res in ("E1", "E2"):
+            raise RuntimeError(f"PLC通信エラー: {res}")
+        
+        try:
+            partial_values = [int(x) for x in res.split()]
+        except ValueError as e:
+            raise RuntimeError(f"PLC応答を数値に変換できません: {res}") from e
+        
+        if len(partial_values) != read_number:
+            raise RuntimeError(
+                f"PLC応答数が不正です: 要求={read_number}, "
+                f"実際={len(partial_values)}, 応答={res}"
+            )
+        
+        values.extend(partial_values)
+        read_count += read_number
+
+    return values
+
+
+
+
+
+
 # テストコード(動作確認用) -----------------------------------------------------------------
 if __name__=='__main__':
 
@@ -425,6 +446,10 @@ if __name__=='__main__':
 
 """
 ----- 更新履歴 -----
+
+2026.7.10
+    read_devices_d 最大数500→5000へ
+    _read_devicesによる共通処理関数化
 
 2026.7.9
 以下関数追加
