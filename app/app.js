@@ -24,7 +24,15 @@ async function updateDefaultValues() {
 }
 
 async function updateTables() {
-    const tableData = await window.pywebview.api.get_table_data();
+    const inspectionMachineNo = document.getElementById("inspection_machine_no").value;
+    const inspectionStartTime = document.getElementById("inspection_start_time").value;
+    const inspectionEndTime = document.getElementById("inspection_end_time").value;
+
+    const tableData = await window.pywebview.api.get_table_data(
+        inspectionMachineNo,
+        inspectionStartTime,
+        inspectionEndTime
+    );
 
     applyTableData(tableData);
 }

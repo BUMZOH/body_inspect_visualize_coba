@@ -7,31 +7,26 @@ PLC側データ:
 - 配列の先頭が最新、末尾が最古
 
 保存先:
-- body_inspection_machine.db
+- 呼び出し元から指定されたSQLiteファイル
 - alarm_history テーブル
 - alarm_comment テーブル
 """
 
 from __future__ import annotations
-import argparse
+
 import sqlite3
 from pathlib import Path
-# original module
-from common_lib_mw import kv_com
 
+# original module(同一パッケージ内)
+from . import kv_com
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = PROJECT_DIR / "data"
-DATA_DIR.mkdir(exist_ok=True)
-DB_FILE = DATA_DIR / "body_inspection_machine.db"
 
 ALARM_HISTORY_COUNT = 500
 ALARM_DATETIME_START_DEVICE = "EM11000"
 ALARM_DEVICE_START_DEVICE = "EM12000"
 
 
-
-def initialize_database(db_path: str | Path = DB_FILE) -> None:
+def initialize_database(db_path: str | Path) -> None:
     """アラーム履歴用テーブルを作成する。既に存在する場合は何もしない。"""
     db_path = Path(db_path)
 
@@ -158,7 +153,7 @@ def read_alarm_history_from_plc(
 def save_alarm_history(
     machine_no: int,
     alarm_history: list[tuple[str, str]],
-    db_path: str | Path = DB_FILE
+    db_path: str | Path
 ) -> int:
     """
     アラーム履歴をSQLiteへ保存する。
@@ -205,7 +200,7 @@ def save_alarm_history(
 def collect_alarm_history(
         ip_add: str,
         machine_no: int,
-        db_path: str | Path = DB_FILE
+        db_path: str | Path
 ) -> dict[str, int]:
     """
     PLCからアラーム履歴を取得し、SQLiteへ保存する。
@@ -243,7 +238,7 @@ def collect_alarm_history(
 def update_alarm_comments(
     ip_add: str,
     machine_no: int,
-    db_path: str | Path = DB_FILE        
+    db_path: str | Path
 ) -> int:
     """
     PLCからLR1000～LR2915のコメントを取得し、
@@ -283,33 +278,182 @@ def update_alarm_comments(
     return len(alarm_info)
 
 
-def parse_arguments() -> argparse.Namespace:
-    """コマンドライン引数を解析する。"""
-    pass
-    # 作成予定..........
+def get_alarm_history(
+    machine_no: int,
+    start_datetime: str,
+    end_datetime: str,
+    db_path: str | Path
+) -> list[tuple[str, str, str]]:
+    """
+    指定設備・指定期間のアラーム履歴を取得する。
+
+    日時の新しい順に並べて返す。
+    開始日時と終了日時は取得範囲に含む。
+
+    Args:
+        machine_no: 設備番号
+        start_datetime: 取得開始日時（YYYY-MM-DD HH:MM:SS）
+        end_datetime: 取得終了日時（YYYY-MM-DD HH:MM:SS）
+        db_path: SQLiteファイルのパス
+
+    Returns:
+        list[tuple[str, str, str]]:
+            [(datetime, alarm_device, alarm_comment), ...]
+    """
+    if machine_no <= 0:
+        raise ValueError(
+            f"設備番号が不正です: {machine_no}"
+        )
+    
+    if start_datetime > end_datetime:
+        raise ValueError(
+            "取得開始日時が取得終了日時より後になっています: "
+            f"{start_datetime} > {end_datetime}"
+        )
+    
+    db_path = Path(db_path)
+    if not db_path.exists():
+        raise FileNotFoundError(
+            f"データベースファイルが存在しません: {db_path}"
+        )
+
+    with sqlite3.connect(db_path) as conn:
+        rows = conn.execute(
+            """
+            SELECT
+                datetime,
+                alarm_device,
+                alarm_comment
+            FROM alarm_history
+            WHERE machine_no = ?
+              AND datetime BETWEEN ? AND ?
+            ORDER BY datetime DESC
+            """,
+            (
+                machine_no,
+                start_datetime,
+                end_datetime
+            )
+        ).fetchall()
+
+    return rows
 
 
-def main() -> None:
-    """コマンドライン実行時の処理。"""
-    pass
-    # 作成予定..........
+def count_alarm_keyword(
+    alarm_history: list[tuple[str, str, str]],
+    keyword: str
+) -> int:
+    """
+    アラーム履歴のalarm_commentに指定キーワードが含まれる件数を返す。
 
+    Args:
+        alarm_history:
+            get_alarm_history()で取得したアラーム履歴
+        keyword:
+            検索する文字列
+
+    Returns:
+        int: キーワードを含むアラームコメントの件数
+    """
+    if not keyword:
+        raise ValueError("検索キーワードが空です")
+    
+    # 以下ジェネレータ式に注意
+    return sum(
+        keyword in alarm_comment
+        for _, _, alarm_comment in alarm_history
+    )
+
+
+def count_alarm_keywords(
+        alarm_history: list[tuple[str, str, str]],
+        keywords: list[str]
+) -> dict[str, int]:
+    """
+    アラーム履歴のalarm_commentに各キーワードが含まれる件数を返す。
+
+    Args:
+        alarm_history:
+            get_alarm_history()で取得したアラーム履歴
+        keywords:
+            検索するキーワードのリスト
+
+    Returns:
+        dict[str, int]:
+            キーワードをキー、該当件数を値とする辞書
+            例: {"1ST": 10, "2ST": 5}
+    """
+    if not keywords:
+        raise ValueError("検索キーワードのリストが空です")
+    
+    if any(not keyword for keyword in keywords):
+        raise ValueError("検索キーワードに空文字が含まれています")
+
+    # 注意: 辞書内包表記 + ジェネレータ式 + sum()による集計
+    return {
+        keyword: sum(
+            keyword in alarm_comment
+            for _, _, alarm_comment in alarm_history
+        )
+        for keyword in keywords
+    }
 
 
 if __name__ == "__main__":
-    initialize_database()
+    # 単体テスト用コード
+    # モジュール実行すること(コマンド例: python -m app.common_lib_mw.kv_alarm_history)
 
-    if False:
-        res = alarm_device_value_to_name(2911)
-        print(res)
+    UPDATE_COMMENTS = True
+    COLLECT_HISTORY = True
+    CHECK_HISTORY = True
 
-    res = update_alarm_comments("192.168.8.1", 555)
-    print(res)
+    # 以下環境に合わせて変更すること
+    ip_add = "192.168.8.1"
+    machine_no = 555
+    db_file = "data/body_inspection_machine.db"
 
-    res = collect_alarm_history("192.168.8.1", 555)
-    print(res)
+    if UPDATE_COMMENTS:
+        comment_count = update_alarm_comments(
+            ip_add,
+            machine_no,
+            db_file
+        )
+        print(f"アラームコメント登録件数: {comment_count}")
+
+    if COLLECT_HISTORY:
+        collect_result = collect_alarm_history(
+            ip_add,
+            machine_no,
+            db_file
+        )
+        print(collect_result)
+
+    if CHECK_HISTORY:
+        rows = get_alarm_history(
+            machine_no=machine_no,
+            start_datetime="2026-01-01 00:00:00",
+            end_datetime="2026-12-31 23:59:59",
+            db_path=db_file
+        )
+
+        alarm_1st_count = count_alarm_keyword(
+            rows,
+            "1ST"
+        )
+        print(f"1STアラーム件数: {alarm_1st_count}")
+
+        keywords = ["1ST", "2ST", "3ST"]
+        alarm_counts = count_alarm_keywords(
+            rows,
+            keywords
+        )
+        print(alarm_counts)
 
 
+"""
+---- 更新履歴 ------
 
+2026/7/11
+初回リリース
 
-
+"""

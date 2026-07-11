@@ -2,8 +2,8 @@ from datetime import datetime
 from pathlib import Path
 import json
 #　独自モジュール
-from db import insert_record
-from common_lib_mw import kv_com
+from db import insert_record, DB_FILE
+from common_lib_mw import kv_com, kv_alarm_history
 
 
 # CONSTANTS -----------------------------------------------
@@ -163,7 +163,7 @@ def search_record_waiting_machine() -> list[str]:
     """
     # (以下作成予定)
     
-    return ["416"]
+    return ["555"]
 
 
 def debug_dump(data):
@@ -218,35 +218,78 @@ class AppAPI:
         }
     
     
-    def get_table_data(self) -> dict:
+    def get_table_data(
+        self,
+        inspection_machine_no: str,
+        inspection_start_time: str,
+        inspection_end_time: str
+    ) -> dict:
+        """PLCの検査数・不良数・アラーム件数を取得する。"""
+        machine_no = int(inspection_machine_no)
 
-        # "記録待ち"になっているPLCを取得
-        target_plc = search_record_waiting_machine()[0]
-        ip_address = config["machines"][target_plc]["plc_ip_address"]
-        # print(f"plc_ip_address={ip_address}")   # Debug
+        if not inspection_start_time or not inspection_end_time:
+            raise ValueError("検査開始時間または検査終了時間が未入力です")
         
+        # datetime-localの値をSQLite保存形式へ合わせる。
+        start_datetime = inspection_start_time.replace("T", " ")
+        end_datetime = inspection_end_time.replace("T", " ")
+
+        # 秒(:00)の補完
+        if len(start_datetime) == 16:
+            start_datetime += ":00"
+        if len(end_datetime) == 16:
+            end_datetime += ":00"
+
+        machine_config = config["machines"].get(str(machine_no))
+        if machine_config is None:
+            raise ValueError(
+                f"設備番号{machine_no}の設定がconfig.jsonにありません"
+            )
+
+        ip_address = machine_config["plc_ip_address"]
         table_data = {}
 
         # PLCカウント用デバイスの値受信
-        count_devices = config["plc_count_devices"]
-        for key, value in count_devices.items():
-            device = count_devices[key]
+        for key, device in config["plc_count_devices"].items():
             res = kv_com.read_device_d(ip_address, device)
-            # print(f"{key} : {device} = {res}")    # debug
             table_data[key] = int(res)
 
-        # アラーム発生数データはダミー(今後作成)
+        # PLC履歴をDBへ保存した後、指定期間の履歴を取得して集計する。
+        kv_alarm_history.collect_alarm_history(
+            ip_add=ip_address,
+            machine_no=machine_no,
+            db_path=DB_FILE
+        )
+
+        alarm_history = kv_alarm_history.get_alarm_history(
+            machine_no=machine_no,
+            start_datetime=start_datetime,
+            end_datetime=end_datetime,
+            db_path=DB_FILE
+        )
+
+        alarm_keywords = [
+            "1ST",
+            "2ST",
+            "3ST",
+            "4ST",
+            "5ST",
+            "6ST",
+            "7ST",
+            "8ST",
+        ]
+        keyword_counts = kv_alarm_history.count_alarm_keywords(
+            alarm_history=alarm_history,
+            keywords=alarm_keywords
+        )
+
         alarm_count_data = {
-            "st1_alarm_count": 0,
-            "st2_alarm_count": 1,
-            "st3_alarm_count": 0,
-            "st4_alarm_count": 2,
-            "st5_alarm_count": 3,
-            "st6_alarm_count": 0,
-            "st7_alarm_count": 0,
-            "st8_alarm_count": 1,
-            "others_alarm_count": 22,
+            f"st{station_no}_alarm_count": keyword_counts[f"{station_no}ST"]
+            for station_no in range(1,9)
         }
+        alarm_count_data["others_alarm_count"] = (
+            len(alarm_history) - sum(keyword_counts.values())
+        )
 
         table_data |= alarm_count_data  # データ結合
         debug_dump(table_data)  # debug
