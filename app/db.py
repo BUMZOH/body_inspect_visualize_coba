@@ -1,5 +1,6 @@
 import sqlite3
 from pathlib import Path
+from datetime import datetime
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_DIR / "data"
@@ -96,10 +97,8 @@ def init_db():
     """
 
     with sqlite3.connect(DB_FILE) as conn:
-
         conn.execute(sql)
 
-        conn.commit()
 
 
 def insert_record(data: dict):
@@ -121,14 +120,55 @@ def insert_record(data: dict):
     """
 
     with sqlite3.connect(DB_FILE) as conn:
-
         conn.execute(sql, data)
 
-        conn.commit()
+
+def get_monthly_serial_no(
+        inspection_machine_no: int | str,
+        record_date: str
+) -> int:
+    """
+    指定した検査機・記録年月に対する次の月別通しNoを返す。
+
+    同じ検査機・同じ年月のデータが存在しない場合は1を返す。
+    """
+    machine_no = int(inspection_machine_no)
+
+    try:
+        record_dt = datetime.strptime(record_date, "%Y-%m-%d")
+    except ValueError as e:
+        raise ValueError(
+            "記録日はYYYY-MM-DD形式で指定してください"
+        ) from e
+
+    target_year_month = record_dt.strftime("%Y-%m")
+
+    with sqlite3.connect(DB_FILE) as conn:
+        row = conn.execute(
+            """
+            SELECT MAX(monthly_serial_no)
+            FROM inspection_data
+            WHERE inspection_machine_no = ?
+              AND substr(record_date, 1, 7) = ?
+            """,
+            (machine_no, target_year_month),
+        ).fetchone()
+
+    current_max_no = row[0]
+
+    if current_max_no is None:
+        return 1
+    
+    return int(current_max_no) + 1
+
 
 
 
 if __name__ == "__main__":
+
+    print( get_monthly_serial_no(555, '2026-07-01'))
+    exit()
+
     init_db()
     sample_data = {
 

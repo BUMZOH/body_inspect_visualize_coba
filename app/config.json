@@ -12,7 +12,6 @@
             "tp_ip_address": "192.168.8.2",
             "xg_ip_address": "192.168.8.3"
         },
-
         "556": {
             "description": "ボディ検査装置2号機",
             "plc_ip_address": "192.168.8.11",

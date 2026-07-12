@@ -76,13 +76,20 @@ td {
 }
 
 .button-area {
-    padding-top: 30px;
-    padding-right: 30px;
-    text-align: right;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin-top: 20px;
+}
+
+.button-group-left,
+.button-group-right {
+    display: flex;
+    gap: 10px;
 }
 
 .button-area button {
-    margin-left: 15px;
     height: 3em;
     width: 160px;
     border-radius: 5px;

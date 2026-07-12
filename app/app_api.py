@@ -1,8 +1,8 @@
 from datetime import datetime
 from pathlib import Path
 import json
-#　独自モジュール
-from db import insert_record, DB_FILE
+# 独自モジュール
+import db
 from common_lib_mw import kv_com, kv_alarm_history
 
 
@@ -56,7 +56,7 @@ def load_config():
 
 
 def convert_empty_to_none(value):
-    if value =="":
+    if value == "":
         return None
     
     return value
@@ -81,7 +81,7 @@ def convert_datetime(value):
     if not value:
         return None
     
-    value = value.replace("T"," ")
+    value = value.replace("T", " ")
 
     if len(value) == 16:
         value += ":00"
@@ -150,20 +150,54 @@ def get_inspection_start_time(machine_no: str):
     minute = int(kv_com.read_device_u(plc_ip_address, "EM10004"))
 
     dt = datetime(year, month, day, hour, minute)
-    print(dt.strftime("%Y-%m-%d %H-%M"))
+    # print(dt.strftime("%Y-%m-%d %H:%M"))
 
     return dt.strftime("%Y-%m-%d %H:%M")
 
 
-def search_record_waiting_machine() -> list[str]:
-    """「記録待ち(EM10011=ON)」になっている機械を探す
-        該当なし:   空のリスト
-        複数台該当: 要素2個以上のリスト
-        ※正常時は要素数1個のリスト
+def search_record_waiting_machine() -> dict[str, list[str]]:
     """
-    # (以下作成予定)
-    
-    return ["555"]
+    記録待ち設備と、通信できなかった設備の一覧を返す。
+
+    Returns:
+        dict[str, list[str]]:
+            record_waiting_machines:
+                EM10011がONになっている設備番号
+
+            communication_error_machines:
+                PLC通信に失敗した設備番号
+    """
+    record_waiting_machines = []
+    communication_error_machines = []
+
+    for machine_no, machine_config in config["machines"].items():
+        plc_ip_address = machine_config["plc_ip_address"]
+
+        try:
+            record_waiting = int(
+                kv_com.read_device_u(
+                    plc_ip_address,
+                    "EM10011",
+                )
+            )
+
+        except Exception as error:
+            print(
+                f"設備番号{machine_no}のPLC通信に失敗しました。"
+                f" IPアドレス: {plc_ip_address}"
+            )
+            print(error)
+
+            communication_error_machines.append(machine_no)
+            continue
+
+        if record_waiting == 1:
+            record_waiting_machines.append(machine_no)
+
+    return {
+        "record_waiting_machines": record_waiting_machines,
+        "communication_error_machines": communication_error_machines
+    }
 
 
 def debug_dump(data):
@@ -184,16 +218,21 @@ class AppAPI:
         load_config()       # 設備関連情報読み込み
 
 
-    def get_default_values(self) -> dict[str, str]:
-        """画面のデフォルト値を返す。"""
+    def get_default_values(
+        self,
+        inspection_machine_no: str
+    ) -> dict[str, str]:
+        """指定された設備の画面デフォルト値を返す。"""
 
-        # 「記録待ち(EM10011=ON)」になっている機械を探す ※※※(以下ダミー関数)
-        # (戻り値が空/複数個の場合を考えること)
-        inspection_machine_no = search_record_waiting_machine()[0]
+        if inspection_machine_no not in config["machines"]:
+            raise ValueError(
+                f"設備番号{inspection_machine_no}の設定が"
+                "config.jsonにありません"
+            )
 
         now = datetime.now()
         # 昼勤/夜勤 自動判断
-        if 8 <= now.hour and now.hour < 20:
+        if 8 <= now.hour < 20:
             shift_name = "昼勤"
         else:
             shift_name = "夜勤"
@@ -212,7 +251,7 @@ class AppAPI:
         """バーコードで読み取った従業員番号を氏名に変換"""
         barcode_text = barcode_text.strip()
         staff_name = staff.get(barcode_text, "不明")
-        return{
+        return {
             "barcode_text": barcode_text,
             "staff_name": staff_name
         }
@@ -258,14 +297,14 @@ class AppAPI:
         kv_alarm_history.collect_alarm_history(
             ip_add=ip_address,
             machine_no=machine_no,
-            db_path=DB_FILE
+            db_path=db.DB_FILE
         )
 
         alarm_history = kv_alarm_history.get_alarm_history(
             machine_no=machine_no,
             start_datetime=start_datetime,
             end_datetime=end_datetime,
-            db_path=DB_FILE
+            db_path=db.DB_FILE
         )
 
         alarm_keywords = [
@@ -285,7 +324,7 @@ class AppAPI:
 
         alarm_count_data = {
             f"st{station_no}_alarm_count": keyword_counts[f"{station_no}ST"]
-            for station_no in range(1,9)
+            for station_no in range(1, 9)
         }
         alarm_count_data["others_alarm_count"] = (
             len(alarm_history) - sum(keyword_counts.values())
@@ -297,17 +336,17 @@ class AppAPI:
         return table_data
 
 
-    def register_data(self,data: dict):
+    def register_data(self, data: dict):
         try:
             record, errors = normalize_record(data)
 
             if errors:
                 return {
                     "ok": False,
-                    "message":"\n".join(errors),
+                    "message": "\n".join(errors),
                 }
             
-            insert_record(record)
+            db.insert_record(record)
 
             return {
                 "ok": True,
@@ -319,3 +358,24 @@ class AppAPI:
                 "ok": False,
                 "message": str(e),
             }
+        
+    def get_monthly_serial_no(
+            self,
+            inspection_machine_no: str,
+            record_date: str
+    ) -> int:
+        """指定した検査機・記録年月に対する次の月別通しNoを返す。"""
+        if not inspection_machine_no:
+            raise ValueError("検査機番が未入力です")
+        
+        if not record_date:
+            raise ValueError("記録日が未入力です")
+        
+        return db.get_monthly_serial_no(
+            inspection_machine_no=inspection_machine_no,
+            record_date=record_date,
+        )
+    
+    def get_record_waiting_machines(self) -> dict[str, list[str]]:
+        return search_record_waiting_machine()
+    
