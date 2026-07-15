@@ -6,17 +6,35 @@
 
 
     "machines": {
-        "555": {
-            "description": "ボディ検査装置1号機",
+        "412": {
+            "description": "ボディ検査装置1号機(No.3257/#510048)",
             "plc_ip_address": "192.168.8.1",
             "tp_ip_address": "192.168.8.2",
             "xg_ip_address": "192.168.8.3"
         },
-        "556": {
-            "description": "ボディ検査装置2号機",
+        "413": {
+            "description": "ボディ検査装置2号機(No.3258/#510049)",
             "plc_ip_address": "192.168.8.11",
             "tp_ip_address": "192.168.8.12",
             "xg_ip_address": "192.168.8.13"
+        },
+        "416": {
+            "description": "ボディ検査装置3号機(No.3355/#520068)",
+            "plc_ip_address": "192.168.8.21",
+            "tp_ip_address": "192.168.8.22",
+            "xg_ip_address": "192.168.8.23"
+        },
+        "421": {
+            "description": "ボディ検査装置4号機(No.3453/#530048)",
+            "plc_ip_address": "192.168.8.31",
+            "tp_ip_address": "192.168.8.32",
+            "xg_ip_address": "192.168.8.33"
+        },
+        "428": {
+            "description": "ボディ検査装置5号機(No.3763/#580013)",
+            "plc_ip_address": "192.168.8.41",
+            "tp_ip_address": "192.168.8.42",
+            "xg_ip_address": "192.168.8.43"
         }
     },
 

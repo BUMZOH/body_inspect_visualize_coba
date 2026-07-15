@@ -1,6 +1,8 @@
 from datetime import datetime
 from pathlib import Path
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 # 独自モジュール
 import db
 from common_lib_mw import kv_com, kv_alarm_history
@@ -155,9 +157,46 @@ def get_inspection_start_time(machine_no: str):
     return dt.strftime("%Y-%m-%d %H:%M")
 
 
+def check_record_waiting_machine(
+        machine_no: str,
+        machine_config: dict
+) -> tuple[str, bool, bool]:
+    """
+    1台の設備について、記録待ち状態を確認する。
+
+    Returns:
+        tuple[str, bool, bool]:
+            machine_no:
+                設備番号
+
+            is_record_waiting:
+                EM10011がONならTrue
+
+            has_communication_error:
+                PLC通信に失敗した場合はTrue
+    """
+    plc_ip_address = machine_config["plc_ip_address"]
+
+    try:
+        record_waiting = int(
+            kv_com.read_device_u(plc_ip_address, "EM10011")
+        )
+
+        return machine_no, record_waiting == 1, False
+    
+    except Exception as error:
+        print(
+            f"設備番号{machine_no}のPLC通信に失敗しました。"
+            f" IPアドレス: {plc_ip_address}"
+        )
+        print(error)
+
+        return machine_no, False, True
+
+
 def search_record_waiting_machine() -> dict[str, list[str]]:
     """
-    記録待ち設備と、通信できなかった設備の一覧を返す。
+    全設備を並列で確認し、記録待ち設備と通信失敗設備を返す
 
     Returns:
         dict[str, list[str]]:
@@ -170,33 +209,36 @@ def search_record_waiting_machine() -> dict[str, list[str]]:
     record_waiting_machines = []
     communication_error_machines = []
 
-    for machine_no, machine_config in config["machines"].items():
-        plc_ip_address = machine_config["plc_ip_address"]
+    machines = config["machines"]
 
-        try:
-            record_waiting = int(
-                kv_com.read_device_u(
-                    plc_ip_address,
-                    "EM10011",
-                )
+    with ThreadPoolExecutor(
+        max_workers=min(len(machines), 10)
+    ) as executor:
+        
+        futures = [
+            executor.submit(
+                check_record_waiting_machine,
+                machine_no,
+                machine_config,
+            )
+            for machine_no, machine_config in machines.items()
+        ]
+
+        for future in as_completed(futures):
+            machine_no, is_record_waiting, has_communication_error = (
+                future.result()
             )
 
-        except Exception as error:
-            print(
-                f"設備番号{machine_no}のPLC通信に失敗しました。"
-                f" IPアドレス: {plc_ip_address}"
-            )
-            print(error)
+            if has_communication_error:
+                communication_error_machines.append(machine_no)
+                continue
 
-            communication_error_machines.append(machine_no)
-            continue
-
-        if record_waiting == 1:
-            record_waiting_machines.append(machine_no)
+            if is_record_waiting:
+                record_waiting_machines.append(machine_no)
 
     return {
-        "record_waiting_machines": record_waiting_machines,
-        "communication_error_machines": communication_error_machines
+        "record_waiting_machines": sorted(record_waiting_machines),
+        "communication_error_machines": sorted(communication_error_machines),
     }
 
 
