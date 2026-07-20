@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>固定メッセージ処理中ダイアログ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="main-container">
+        <h1>固定メッセージ処理中ダイアログ</h1>
+        
+        <p>
+            ボタンを押すと、約30秒かかる処理を開始します。
+        </p>
+
+        <button id="start-button">長時間処理を開始</button>
+
+        <div class="result-area">
+            <h2>処理結果</h2>
+
+            <p id="result-message">
+                まだ処理は実施されていません。
+            </p>
+        </div>
+    </main>
+
+
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-dialog">
+            <h2>処理中です</h2>
+            <p>
+                しばらくお待ちください。
+            </p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
