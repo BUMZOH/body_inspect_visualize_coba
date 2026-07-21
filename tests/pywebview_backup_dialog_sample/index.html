@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>バックアップダイアログ サンプル</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="main-content">
+        <h1>バックアップダイアログサンプル</h1>
+        <p>バックアップボタンを押すと、専用ダイアログが開きます。</p>
+
+        <button id="open-backup-dialog-button" class="primary-button">バックアップ</button>
+    </main>
+    
+    <div id="backup-dialog-overlay" class="dialog-overlay hidden">
+        <section class="backup-dialog">
+
+            <header class="dialog-header">
+                <h2>バックアップ</h2>
+            </header>
+
+            <div class="dialog-body">
+                <label for="backup-drive-select">保存先ドライブ</label>
+
+                <select id="backup-drive-select">
+                    <option value="C:">Cドライブ</option>
+                    <option value="D:">Dドライブ</option>
+                    <option value="E:">Eドライブ</option>
+                    <option value="Z:">Zドライブ</option>
+                </select>
+
+                <p id="backup-message" class="backup-message"></p>
+            </div>
+            <footer class="dialog-footer">
+                <button id="execute-backup-button" class="primary-button">実行</button>
+                <button id="cancel-backup-button" class="secondary-button">キャンセル</button>
+            </footer>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
+
+
