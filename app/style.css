@@ -95,4 +95,15 @@ td {
     border-radius: 5px;
     font-size: 16px;
     cursor: pointer;
+
+    transition: transform 0.08s;
+}
+
+.button-area button:hover {
+    filter: brightness(1.05);
+}
+
+
+.button-area button:active {
+    transform: translateY(2px);
 }

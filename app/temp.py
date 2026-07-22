@@ -7,7 +7,7 @@ plc_ip_address = "192.168.8.1"
 #--- アラーム履歴関係 ---
 if False:
     #--- アラーム発生ON→OFF
-    res = kv_com.
+    
 
     # --- 値格納 ----
     device_map = {

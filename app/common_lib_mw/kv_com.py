@@ -99,6 +99,40 @@ def write_device_u(ip_add:str, device:str, value:int)->str:
     return com_with_plc(ip_add, cmd)
 
 
+def write_devices_u(ip_add: str, device: str, values: list[int]) -> str:
+    """
+    PLCの連続デバイスへ16bit符号なし整数を書き込む。
+
+    Args:
+        ip_add: PLCのIPアドレス
+        device: 書込み開始デバイス
+        values: 書き込む値のリスト
+
+    Returns:
+        str: PLCからの応答。正常時は"OK"
+    """
+    device_count = len(values)
+
+    if not 1 <= device_count <= 1000:
+        raise ValueError(
+            "書き込みデバイスは1～1000点で指定してください。"
+        )
+    
+    value_text = " ".join(str(value) for value in values)
+
+    command = f"WRS {device}.U {device_count} {value_text}\r"
+
+    response = com_with_plc(ip_add, command)
+
+    if response in ("E1", "E2"):
+        raise RuntimeError(f"PLC通信エラー: {response}")
+    
+    if response != "OK":
+        raise RuntimeError(f"PLCから予期しない応答が返されました: {response}")
+    
+    return response
+
+
 def read_device_d(ip_add:str, device:str)->str:
     """ PLCのデバイス1点のデータ読み込み
         (データ形式はU:10進数32ビット符号なし)
@@ -404,10 +438,12 @@ def _read_devices(
 # テストコード(動作確認用) -----------------------------------------------------------------
 if __name__=='__main__':
 
-    print(join_u16_to_u32(3,64019))
-    exit()
-
     ip_add = "172.20.1.111"
+    ip_add = "192.168.8.1"
+
+    res = write_devices_u(ip_add, "EM10000", [0,0])
+    print(res)
+    exit()
 
     res = read_devices_u(ip_add, 'ZF0', 1500)
     print(res)
@@ -446,6 +482,9 @@ if __name__=='__main__':
 
 """
 ----- 更新履歴 -----
+
+2026.7.22
+    write_devices_u 追加 （PLC一括リセット用)
 
 2026.7.10
     read_devices_d 最大数500→5000へ

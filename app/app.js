@@ -36,6 +36,8 @@ function applyDefaultValues(defaultValues) {
     setInputValue("inspection_machine_no", defaultValues.inspection_machine_no);
     setInputValue("record_date", defaultValues.record_date);
     setInputValue("shift_name", defaultValues.shift_name);
+    setInputValue("part_no", defaultValues.part_no);
+    setInputValue("monthly_serial_no", defaultValues.monthly_serial_no);
     setInputValue("inspection_start_time", defaultValues.inspection_start_time);
     setInputValue("inspection_end_time", defaultValues.inspection_end_time);
     setInputValue("change_point_record", defaultValues.change_point_record);
@@ -44,19 +46,6 @@ function applyDefaultValues(defaultValues) {
 async function updateDefaultValues(machineNo) {
     const defaultValues = await window.pywebview.api.get_default_values(machineNo);
     applyDefaultValues(defaultValues);
-}
-
-async function updateMonthlySerialNo() {
-    // updateDefaultValues()でフォームへ値を設定した後に取得する。
-    const inspectionMachineNo = document.getElementById("inspection_machine_no").value;
-    const recordDate = document.getElementById("record_date").value;
-
-    const monthlySerialNo = await window.pywebview.api.get_monthly_serial_no(
-        inspectionMachineNo,
-        recordDate
-    );
-
-    setInputValue("monthly_serial_no", monthlySerialNo);
 }
 
 async function updateTables() {
@@ -135,14 +124,37 @@ async function registerData() {
         ...tableData,
     };
 
-    const result = await window.pywebview.api.register_data(data);
-    if (result.ok) {
-        alert(result.message);
-    } else {
-        alert("登録に失敗しました。\n" + result.message);
+    const registerResult = await window.pywebview.api.register_data(data);
+    if (!registerResult.ok) {
+        alert(
+            "登録に失敗しました。\n" + registerResult.message
+        );
+        return;
     }
 
+    const shouldResetPlc = confirm(
+        "PLCデバイスをリセットしますか？"
+    );
+
+    if (shouldResetPlc) {
+        const resetResult = await window.pywebview.api.reset_plc_devices(
+            data.inspection_machine_no
+        );
+
+        if (!resetResult.ok) {
+            alert(
+                "PLCデバイスのリセットに失敗しました。\n"
+                + resetResult.message
+            );
+            return;
+        }
+
+        alert(resetResult.message);
+    }
+
+    resetAll();
 }
+
 
 
 
@@ -151,6 +163,9 @@ window.addEventListener("pywebviewready", () => {
     // データ更新ボタン
     const updateButton = document.getElementById("update_button");
     updateButton.addEventListener("click", async () => {
+        updateButton.disabled = true;
+        updateButton.textContent = "処理中...";
+
         try {
             // 記録待ち設備を検索する。
             const machineNo = await getRecordWaitingMachines();
@@ -163,13 +178,15 @@ window.addEventListener("pywebviewready", () => {
             // 検索で確定した設備番号を使ってデフォルト値を取得する。
             await updateDefaultValues(machineNo);
 
-            // フォームに入力された設備番号・記録日を使って採番する。
-            await updateMonthlySerialNo();
-
             await updateTables();
+
         } catch (error) {
             console.error(error);
             alert(`データ更新に失敗しました。\n${error}`);
+
+        } finally {
+            updateButton.disabled = false;
+            updateButton.textContent = "データ更新";
         }
     });
 
@@ -193,8 +210,22 @@ window.addEventListener("pywebviewready", () => {
 
     // アラームコメント吸出しボタン
     const exportAlarmCommentButton = document.getElementById("export_alarm_comment_button");
-    exportAlarmCommentButton.addEventListener("click", () => {
-        alert("現在作成中です。");
+    exportAlarmCommentButton.addEventListener("click", async () => {
+        exportAlarmCommentButton.disabled = true;
+        exportAlarmCommentButton.textContent = "処理中...";
+
+        try {
+            await window.pywebview.api.export_alarm_comments();
+            alert("処理が完了しました。");
+        
+        } catch (error) {
+            console.error(error);
+            alert(`アラームコメントの吸出しに失敗しました。\n${error}`);
+
+        } finally {
+            exportAlarmCommentButton.disabled = false;
+            exportAlarmCommentButton.textContent = "ｱﾗｰﾑｺﾒﾝﾄ吸出し";
+        }
     });
 
 });

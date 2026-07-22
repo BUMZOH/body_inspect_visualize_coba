@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+
 # 独自モジュール
 import db
 from common_lib_mw import kv_com, kv_alarm_history
@@ -12,6 +13,7 @@ from common_lib_mw import kv_com, kv_alarm_history
 BASE_DIR = Path(__file__).resolve().parent
 STAFF_FILE = BASE_DIR / "staff.json"
 CONFIG_FILE = BASE_DIR / "config.json"
+PART_NO_FILE = BASE_DIR / "part_no.json"
 
 
 # FOR VALIDATION ----
@@ -33,6 +35,8 @@ REQUIRED_COLUMNS = {
 # GLOBAL VARIABLES --------------------------------------------------
 staff = {}
 config = {}
+part_no_table = {}
+
 
 # FUNCTIONS ---------------------------------------------------------
 def load_staff_info():
@@ -55,6 +59,17 @@ def load_config():
 
     with CONFIG_FILE.open(mode='r', encoding='UTF-8') as f:
         config = json.load(f)
+
+
+def load_part_no_table():
+    global part_no_table
+
+    if not PART_NO_FILE.exists():
+        print("part_no.jsonが見つかりません")
+        return
+    
+    with PART_NO_FILE.open(mode="r", encoding="UTF-8") as file:
+        part_no_table = json.load(file)
 
 
 def convert_empty_to_none(value):
@@ -157,6 +172,16 @@ def get_inspection_start_time(machine_no: str):
     return dt.strftime("%Y-%m-%d %H:%M")
 
 
+def get_part_no(machine_no: str) -> str:
+    """PLCのEM10012から品番識別値を取得し、対応する品番を返す。"""
+
+    plc_ip_address = config["machines"][machine_no]["plc_ip_address"]
+
+    part_no_value = int(kv_com.read_device_u(plc_ip_address, "EM10012"))
+
+    return part_no_table.get(str(part_no_value), "unknown")
+
+
 def check_record_waiting_machine(
         machine_no: str,
         machine_config: dict
@@ -256,14 +281,15 @@ def debug_dump(data):
 #---- API CLASS -----------------------------------------------------
 class AppAPI:
     def __init__(self) -> None:
-        load_staff_info()   # 従業員番号-氏名 対応表読み込み
-        load_config()       # 設備関連情報読み込み
+        load_staff_info()       # 従業員番号-氏名 対応表読み込み
+        load_config()           # 設備関連情報読み込み
+        load_part_no_table()    # 品番対応表読み込み 
 
 
     def get_default_values(
         self,
         inspection_machine_no: str
-    ) -> dict[str, str]:
+    ) -> dict[str, str | int]:
         """指定された設備の画面デフォルト値を返す。"""
 
         if inspection_machine_no not in config["machines"]:
@@ -273,22 +299,29 @@ class AppAPI:
             )
 
         now = datetime.now()
+        record_date = now.strftime("%Y-%m-%d")
+
         # 昼勤/夜勤 自動判断
         if 8 <= now.hour < 20:
             shift_name = "昼勤"
         else:
             shift_name = "夜勤"
 
+        monthly_serial_no = db.get_monthly_serial_no(inspection_machine_no, record_date)
+
         # idに対するデフォルト値を渡す(辞書型)
         return {
             "inspection_machine_no": inspection_machine_no,
-            "record_date": now.strftime("%Y-%m-%d"),
+            "record_date": record_date,
             "shift_name": shift_name,
+            "part_no": get_part_no(inspection_machine_no),
+            "monthly_serial_no": monthly_serial_no,
             "inspection_start_time": get_inspection_start_time(inspection_machine_no),
             "inspection_end_time": now.strftime("%Y-%m-%d %H:%M"),
             "change_point_record": "社内"
         }
     
+
     def convert_barcode(self, barcode_text: str) -> dict[str, str]:
         """バーコードで読み取った従業員番号を氏名に変換"""
         barcode_text = barcode_text.strip()
@@ -400,24 +433,63 @@ class AppAPI:
                 "ok": False,
                 "message": str(e),
             }
-        
-    def get_monthly_serial_no(
-            self,
-            inspection_machine_no: str,
-            record_date: str
-    ) -> int:
-        """指定した検査機・記録年月に対する次の月別通しNoを返す。"""
-        if not inspection_machine_no:
-            raise ValueError("検査機番が未入力です")
-        
-        if not record_date:
-            raise ValueError("記録日が未入力です")
-        
-        return db.get_monthly_serial_no(
-            inspection_machine_no=inspection_machine_no,
-            record_date=record_date,
-        )
     
+
     def get_record_waiting_machines(self) -> dict[str, list[str]]:
         return search_record_waiting_machine()
+    
+
+    def export_alarm_comments(self):
+        machines = config["machines"]
+
+        for machine_no, machine_config in machines.items():
+            ip = machine_config["plc_ip_address"]
+            
+            try:
+                registered_count = kv_alarm_history.update_alarm_comments(ip, int(machine_no), db.DB_FILE)
+                print(f"設備={machine_no}:アラームコメント登録/更新件数 = {registered_count}")
+            except Exception as error:
+                print(
+                    f"設備番号{machine_no}のアラーム取得に失敗しました。"
+                    f" IPアドレス: {ip}"
+                )
+                print(error)
+
+        return
+    
+
+    def reset_plc_devices(self, inspection_machine_no: str) -> dict:
+        """
+        指定設備のEM10000～EM10999を0リセットする。
+        """
+        try:
+            machine_config = config["machines"].get(inspection_machine_no)
+
+            if machine_config is None:
+                raise ValueError(
+                    f"設備番号{inspection_machine_no}の設定がconfig.jsonにありません"
+                )
+            
+            plc_ip_address = machine_config["plc_ip_address"]
+
+            kv_com.write_devices_u(
+                ip_add=plc_ip_address,
+                device="EM10000",
+                values=[0] * 1000,
+            )
+
+            return {
+                "ok": True,
+                "message": (
+                    "PLCデバイスをリセットしました。\n"
+                    "対象: EM10000 - EM10999"
+                ),
+            }
+
+        except Exception as error:
+            return {
+                "ok": False,
+                "message": str(error),
+            }
+
     
