@@ -3,39 +3,6 @@ from common_lib_mw import kv_com
 
 plc_ip_address = "192.168.8.1"
 
-
-#--- アラーム履歴関係 ---
-if False:
-    #--- アラーム発生ON→OFF
-    
-
-    # --- 値格納 ----
-    device_map = {
-
-    }
-
-    # --- 値確認 ---
-    res = kv_com.read_devices_d(plc_ip_address, "EM11000", 10)
-    print(res)
-
-    exit()
-
-
-#--- アラームコメント確認 ---
-if True:
-    alarm = kv_com.dl_alarm_comment(plc_ip_address)
-    print(alarm)
-    exit()
-
-# res = kv_com.write_device_d(plc_ip_address, "DM100", 445)
-# print(res)
-
-res = kv_com.read_devices_d(plc_ip_address, "DM100", 5000)
-print(res)
-# print(kv_com.kv_seconds_to_datetime_str(res[0]))
-# exit()
-exit()
-
 # カウンタデバイス設定 ------------------------------------
 device_map = {
     "EM10090": 500,         # OK数
@@ -53,7 +20,6 @@ device_map = {
     "EM10120": 120,
     "EM10122": 122,
     "EM10124": 124,
-
 
     # 2回目検査結果
     "EM10204": 204,
