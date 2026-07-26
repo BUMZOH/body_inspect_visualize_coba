@@ -1,0 +1,349 @@
+{
+    "id": {
+        "type": "INTEGER",
+        "japanese": "ID",
+        "required": false
+    },
+
+    "inspection_machine_no": {
+        "type": "INTEGER",
+        "japanese": "検査機番",
+        "english": "Inspection Machine No.",
+        "required": true
+    },
+
+    "record_date": {
+        "type": "TEXT",
+        "format": "date",
+        "japanese": "記録日",
+        "english": "Record Date",
+        "required": true
+    },
+
+    "shift_name": {
+        "type": "TEXT",
+        "japanese": "シフト",
+        "english": "Shift",
+        "required": true
+    },
+
+    "part_no": {
+        "type": "TEXT",
+        "japanese": "品番",
+        "english": "Part No.",
+        "required": true
+    },
+
+    "nc_process_date": {
+        "type": "TEXT",
+        "format": "date",
+        "japanese": "NC加工日",
+        "english": "NC Process Date",
+        "required": false
+    },
+
+    "nc_machine_no": {
+        "type": "INTEGER",
+        "japanese": "NC機番",
+        "english": "NC Machine No.",
+        "required": false
+    },
+
+    "monthly_serial_no": {
+        "type": "INTEGER",
+        "japanese": "月別通しNo",
+        "english": "Monthly Serial No.",
+        "required": false
+    },
+
+    "inspection_start_time": {
+        "type": "TEXT",
+        "format": "datetime",
+        "japanese": "検査開始時間",
+        "english": "Inspection Start Time",
+        "required": true
+    },
+
+    "inspection_end_time": {
+        "type": "TEXT",
+        "format": "datetime",
+        "japanese": "検査終了時間",
+        "english": "Inspection End Time",
+        "required": true
+    },
+
+    "change_point_record": {
+        "type": "TEXT",
+        "japanese": "変化点記録",
+        "english": "Change Point Record",
+        "required": false
+    },
+
+    "camera_threshold": {
+        "type": "TEXT",
+        "japanese": "カメラしきい値",
+        "english": "Camera Threshold",
+        "required": false
+    },
+
+    "worker_name": {
+        "type": "TEXT",
+        "japanese": "担当者",
+        "english": "Worker",
+        "required": true
+    },
+
+    "appearance_check": {
+        "type": "TEXT",
+        "japanese": "外観チェック",
+        "english": "Appearance Check",
+        "required": false
+    },
+
+    "appearance_checker": {
+        "type": "TEXT",
+        "japanese": "外観チェック者",
+        "english": "Appearance Checker",
+        "required": false
+    },
+
+    "setup_check": {
+        "type": "TEXT",
+        "japanese": "段取時確認作業",
+        "english": "Setup Check",
+        "required": false
+    },
+
+    "remaining_checker": {
+        "type": "TEXT",
+        "japanese": "残留品確認者",
+        "english": "Remaining Part Checker",
+        "required": false
+    },
+
+    "camera_5st_checker": {
+        "type": "TEXT",
+        "japanese": "5STカメラ確認者",
+        "english": "5ST Camera Checker",
+        "required": false
+    },
+
+    "remaining_double_checker": {
+        "type": "TEXT",
+        "japanese": "残留品Wチェック者",
+        "english": "RemainingPt WChecker",
+        "required": false
+    },
+
+    "drop_count": {
+        "type": "INTEGER",
+        "japanese": "落下品数",
+        "english": "Dropped Part Count",
+        "required": false
+    },
+
+    "abnormal_report": {
+        "type": "TEXT",
+        "japanese": "変化点／異常報告",
+        "english": "Change Point / Abnormal Report",
+        "required": false
+    },
+
+    "ok_count": {
+        "type": "INTEGER",
+        "japanese": "OK品数",
+        "required": false
+    },
+
+    "ng_count": {
+        "type": "INTEGER",
+        "japanese": "NG品数",
+        "required": false
+    },
+
+    "inner_d_ngcount1": {
+        "type": "INTEGER",
+        "japanese": "内径NG-1",
+        "required": false
+    },
+
+    "inner_d_ngcount2": {
+        "type": "INTEGER",
+        "japanese": "内径NG-2",
+        "required": false
+    },
+
+    "phi071_ngcount1": {
+        "type": "INTEGER",
+        "japanese": "φ0.71NG-1",
+        "required": false
+    },
+
+    "phi071_ngcount2": {
+        "type": "INTEGER",
+        "japanese": "φ0.71NG-2",
+        "required": false
+    },
+
+    "total_length_ngcount1": {
+        "type": "INTEGER",
+        "japanese": "全長NG-1",
+        "required": false
+    },
+
+    "total_length_ngcount2": {
+        "type": "INTEGER",
+        "japanese": "全長NG-2",
+        "required": false
+    },
+
+    "taper_thickness_ngcount1": {
+        "type": "INTEGER",
+        "japanese": "テーパ厚みNG1",
+        "required": false
+    },
+
+    "taper_thickness_ngcount2": {
+        "type": "INTEGER",
+        "japanese": "テーパ厚みNG2",
+        "required": false
+    },
+
+    "level_gap_ngcount1": {
+        "type": "INTEGER",
+        "japanese": "段差NG1",
+        "required": false
+    },
+
+    "level_gap_ngcount2": {
+        "type": "INTEGER",
+        "japanese": "段差NG2",
+        "required": false
+    },
+
+    "bottom_ngcount1": {
+        "type": "INTEGER",
+        "japanese": "底NG1",
+        "required": false
+    },
+
+    "bottom_ngcount2": {
+        "type": "INTEGER",
+        "japanese": "底NG2",
+        "required": false
+    },
+
+    "thickness_ngcount1": {
+        "type": "INTEGER",
+        "japanese": "厚みNG1",
+        "required": false
+    },
+
+    "thickness_ngcount2": {
+        "type": "INTEGER",
+        "japanese": "厚みNG2",
+        "required": false
+    },
+
+    "side_visual1_ngcount1": {
+        "type": "INTEGER",
+        "japanese": "側面外観1NG1",
+        "required": false
+    },
+
+    "side_visual1_ngcount2": {
+        "type": "INTEGER",
+        "japanese": "側面外観1NG2",
+        "required": false
+    },
+
+    "side_visual2_ngcount1": {
+        "type": "INTEGER",
+        "japanese": "側面外観2NG1",
+        "required": false
+    },
+
+    "side_visual2_ngcount2": {
+        "type": "INTEGER",
+        "japanese": "側面外観2NG2",
+        "required": false
+    },
+
+    "phi2435_depth_ngcount1": {
+        "type": "INTEGER",
+        "japanese": "φ2.435深さNG1",
+        "required": false
+    },
+
+    "phi2435_depth_ngcount2": {
+        "type": "INTEGER",
+        "japanese": "φ2.435深さNG2",
+        "required": false
+    },
+
+    "phi14_depth_ngcount1": {
+        "type": "INTEGER",
+        "japanese": "φ1.4深さNG1",
+        "required": false
+    },
+
+    "phi14_depth_ngcount2": {
+        "type": "INTEGER",
+        "japanese": "φ1.4深さNG2",
+        "required": false
+    },
+
+    "st1_alarm_count": {
+        "type": "INTEGER",
+        "japanese": "ST1アラーム数",
+        "required": false
+    },
+
+    "st2_alarm_count": {
+        "type": "INTEGER",
+        "japanese": "ST2アラーム数",
+        "required": false
+    },
+
+    "st3_alarm_count": {
+        "type": "INTEGER",
+        "japanese": "ST3アラーム数",
+        "required": false
+    },
+
+    "st4_alarm_count": {
+        "type": "INTEGER",
+        "japanese": "ST4アラーム数",
+        "required": false
+    },
+
+    "st5_alarm_count": {
+        "type": "INTEGER",
+        "japanese": "ST5アラーム数",
+        "required": false
+    },
+
+    "st6_alarm_count": {
+        "type": "INTEGER",
+        "japanese": "ST6アラーム数",
+        "required": false
+    },
+
+    "st7_alarm_count": {
+        "type": "INTEGER",
+        "japanese": "ST7アラーム数",
+        "required": false
+    },
+
+    "st8_alarm_count": {
+        "type": "INTEGER",
+        "japanese": "ST8アラーム数",
+        "required": false
+    },
+
+    "others_alarm_count": {
+        "type": "INTEGER",
+        "japanese": "その他アラーム数",
+        "required": false
+    }
+}

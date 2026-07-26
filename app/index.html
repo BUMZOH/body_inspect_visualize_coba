@@ -8,23 +8,31 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>ボディ検査装置 稼働データ入力画面</h1>
+    <header class="title-area">
+        <h1>ボディ検査装置 稼働データ入力画面</h1>
+    
+        <div class="language-button-area">
+            <button id="english_button" type="button">ENGLISH</button>
+            <button id="japanese_button" type="button">日本語</button>
+        </div>
+    </header>
+
 
     <!------- データ入力部 ------->
     <div class="form-area">
         <!-- 1段目 --------------------------------------------------->
         <div class="form-item">
-            <label for="inspection_machine_no">検査機番：</label>
+            <label for="inspection_machine_no" data-column="inspection_machine_no">検査機番：</label>
             <input id="inspection_machine_no" type="text" readonly>
         </div>
 
         <div class="form-item">
-            <label for="record_date">記録日：</label>
+            <label for="record_date" data-column="record_date">記録日：</label>
             <input id="record_date" type="date">
         </div>
 
         <div class="form-item">
-            <label for="shift_name">シフト：</label>
+            <label for="shift_name" data-column="shift_name">シフト：</label>
             <select name="" id="shift_name">
                 <option value=""></option>
                 <option value="昼勤">昼勤</option>
@@ -33,38 +41,38 @@
         </div>
 
         <div class="form-item">
-            <label for="part_no">品番：</label>
+            <label for="part_no" data-column="part_no">品番：</label>
             <input id="part_no" type="text" readonly>
         </div>
 
         <div class="form-item">
-            <label for="nc_process_date">NC加工日：</label>
+            <label for="nc_process_date" data-column="nc_process_date">NC加工日：</label>
             <input id="nc_process_date" type="date">
         </div>
 
         <div class="form-item">
-            <label for="nc_machine_no">NC機番：</label>
+            <label for="nc_machine_no" data-column="nc_machine_no">NC機番：</label>
             <input id="nc_machine_no" type="text" placeholder="手入力">
         </div>
 
         <div class="form-item">
-            <label for="monthly_serial_no">月別通しNo：</label>
+            <label for="monthly_serial_no" data-column="monthly_serial_no">月別通しNo：</label>
             <input id="monthly_serial_no" type="text" readonly>
         </div>
 
         <div class="form-item">
-            <label for="inspection_start_time">検査開始時間：</label>
+            <label for="inspection_start_time" data-column="inspection_start_time">検査開始時間：</label>
             <input id="inspection_start_time" type="datetime-local" step="60">
         </div>
 
         <div class="form-item">
-            <label for="inspection_end_time">検査終了時間：</label>
+            <label for="inspection_end_time" data-column="inspection_end_time">検査終了時間：</label>
             <input id="inspection_end_time" type="datetime-local" step="60">
         </div>
 
         <!-- 2段目 --------------------------------------------------->
         <div class="form-item">
-            <label for="change_point_record">変化点記録：</label>
+            <label for="change_point_record" data-column="change_point_record">変化点記録：</label>
             <select name="" id="change_point_record">
                 <option value=""></option>
                 <option value="社内">社内</option>
@@ -74,7 +82,7 @@
         </div>
 
         <div class="form-item">
-            <label for="camera_threshold">カメラしきい値：</label>
+            <label for="camera_threshold" data-column="camera_threshold">カメラしきい値：</label>
             <select name="" id="camera_threshold">
                 <option value=""></option>
                 <option value="正常">正常</option>
@@ -83,12 +91,12 @@
         </div>
 
         <div class="form-item">
-            <label for="worker_name">担当者：</label>
+            <label for="worker_name" data-column="worker_name">担当者：</label>
             <input id="worker_name" type="text" placeholder="バーコード入力">
         </div>
 
         <div class="form-item">
-            <label for="appearance_check">外観チェック：</label>
+            <label for="appearance_check" data-column="appearance_check">外観チェック：</label>
             <select name="" id="appearance_check">
                 <option value=""></option>
                 <option value="正常">正常</option>
@@ -97,12 +105,12 @@
         </div>
 
         <div class="form-item">
-            <label for="appearance_checker">外観チェック者：</label>
+            <label for="appearance_checker" data-column="appearance_checker">外観チェック者：</label>
             <input id="appearance_checker" type="text" placeholder="バーコード入力">
         </div>
 
         <div class="form-item">
-            <label for="setup_check">段取時確認作業：</label>
+            <label for="setup_check" data-column="setup_check">段取時確認作業：</label>
             <select name="" id="setup_check">
                 <option value=""></option>
                 <option value="あり">あり</option>
@@ -112,28 +120,28 @@
         </div>
 
         <div class="form-item">
-            <label for="remaining_checker">残留品確認者：</label>
+            <label for="remaining_checker" data-column="remaining_checker">残留品確認者：</label>
             <input id="remaining_checker" type="text">
         </div>
 
         <div class="form-item">
-            <label for="camera_5st_checker">5STカメラ確認者：</label>
+            <label for="camera_5st_checker" data-column="camera_5st_checker">5STカメラ確認者：</label>
             <input id="camera_5st_checker" type="text">
         </div>
 
         <div class="form-item">
-            <label for="remaining_double_checker">残留品Wチェック者：</label>
+            <label for="remaining_double_checker" data-column="remaining_double_checker">残留品Wチェック者：</label>
             <input id="remaining_double_checker" type="text" placeholder="バーコード入力">
         </div>
 
         <!-- 3段目 --------------------------------------------------->
         <div class="form-item">
-            <label for="drop_count">落下品数：</label>
+            <label for="drop_count" data-column="drop_count">落下品数：</label>
             <input id="drop_count" type="text" placeholder="手入力">
         </div>
 
         <div class="form-item note">
-            <label for="abnormal_report">変化点／異常報告：</label>
+            <label for="abnormal_report" data-column="abnormal_report">変化点／異常報告：</label>
             <input id="abnormal_report" type="text">
         </div>
     </div>
@@ -231,15 +239,15 @@
 
     <div class="button-area">
         <div class="button-group-left">
-            <button id="backup_button">バックアップ</button>
-            <button id="export_alarm_comment_button">ｱﾗｰﾑｺﾒﾝﾄ吸出し</button>
-            <button id="export_data_button">データ出力</button>
+            <button id="backup_button" data-button-name="backup">バックアップ</button>
+            <button id="export_alarm_comment_button" data-button-name="exportAlarmComment">ｱﾗｰﾑｺﾒﾝﾄ吸出し</button>
+            <button id="export_data_button" data-button-name="exportData">データ出力</button>
         </div>
 
         <div class="button-group-right">
-            <button id="initialize_button">データ初期化</button>
-            <button id="update_button">データ更新</button>
-            <button id="register_button">データ登録</button>
+            <button id="initialize_button" data-button-name="initialize">データ初期化</button>
+            <button id="update_button" data-button-name="update">データ更新</button>
+            <button id="register_button" data-button-name="register">データ登録</button>
         </div>
     </div>
 

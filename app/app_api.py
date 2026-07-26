@@ -16,28 +16,14 @@ BASE_DIR = Path(__file__).resolve().parent
 STAFF_FILE = BASE_DIR / "staff.json"
 CONFIG_FILE = BASE_DIR / "config.json"
 PART_NO_FILE = BASE_DIR / "part_no.json"
+DATA_DEFINITION_FILE = BASE_DIR / "data_definition.json"
 
-
-# FOR VALIDATION ----
-DATETIME_COLUMNS = {
-    "inspection_start_time",
-    "inspection_end_time",
-}
-
-REQUIRED_COLUMNS = {
-    "inspection_machine_no": "検査機番",
-    "record_date": "記録日",
-    "shift_name": "シフト",
-    "part_no": "品番",
-    "worker_name": "担当者",
-    "inspection_start_time": "検査開始時間",
-    "inspection_end_time": "検査終了時間",
-}
 
 # GLOBAL VARIABLES --------------------------------------------------
 staff = {}
 config = {}
 part_no_table = {}
+data_definitions = {}
 
 
 # FUNCTIONS ---------------------------------------------------------
@@ -74,6 +60,17 @@ def load_part_no_table():
         part_no_table = json.load(file)
 
 
+def load_data_definitions():
+    global data_definitions
+
+    if not DATA_DEFINITION_FILE.exists():
+        print("data_definitionが見つかりません")
+        return
+
+    with DATA_DEFINITION_FILE.open(mode="r", encoding="UTF-8") as file:
+        data_definitions = json.load(file)
+
+
 def convert_empty_to_none(value):
     if value == "":
         return None
@@ -81,15 +78,44 @@ def convert_empty_to_none(value):
     return value
 
 
+def get_required_columns() -> dict[str, str]:
+    """
+    必須入力カラムと日本語表示名を取得する。
+
+    Returns:
+        dict[str, str]:
+            キー: DBカラム名
+            値: エラー表示用の日本語名
+    """
+    return {
+        column: definition.get("japanese", column)
+        for column, definition in data_definitions.items()
+        if definition.get("required", False)
+    }
+
+
 def validate_required(data: dict) -> list[str]:
     errors = []
+    required_columns = get_required_columns()
 
-    for column, label in REQUIRED_COLUMNS.items():
+    for column, label in required_columns.items():
         print(f"{column} : {data.get(column)}")
+
         if not data.get(column):
             errors.append(f"{label}が未入力です")
     
     return errors
+
+
+def get_datetime_columns() -> set[str]:
+    """
+    datetime形式として変換するカラム名を取得する。
+    """
+    return {
+        column
+        for column, definition in data_definitions.items()
+        if definition.get("format") == "datetime"
+    }
 
 
 def convert_datetime(value):
@@ -109,33 +135,22 @@ def convert_datetime(value):
 
 
 def get_integer_columns() -> set[str]:
-    # (辞書データの結合に注意)
-    return (
-        {
-            "inspection_machine_no",
-            "nc_machine_no",
-            "monthly_serial_no",
-            "drop_count",
-        }
-        | set(config["plc_count_devices"].keys())
-        | {
-            "st1_alarm_count",
-            "st2_alarm_count",
-            "st3_alarm_count",
-            "st4_alarm_count",
-            "st5_alarm_count",
-            "st6_alarm_count",
-            "st7_alarm_count",
-            "st8_alarm_count",
-            "others_alarm_count",
-        }
-    )
+    """
+    INTEGER型として定義されているカラム名を取得する。
+    """
+    return {
+        column
+        for column, definition in data_definitions.items()
+        if definition.get("type") == "INTEGER"
+    }
 
 
 def normalize_record(data: dict) -> tuple[dict, list[str]]:
     errors = validate_required(data)
     record = {}
+
     integer_columns = get_integer_columns()
+    datetime_columns = get_datetime_columns()
 
 
     for key, value in data.items():
@@ -149,7 +164,7 @@ def normalize_record(data: dict) -> tuple[dict, list[str]]:
                 errors.append(f"{key}は数値で入力してください")
                 record[key] = 0
 
-        elif key in DATETIME_COLUMNS:
+        elif key in datetime_columns:
             record[key] = convert_datetime(value)
 
         else:
@@ -269,6 +284,18 @@ def search_record_waiting_machine() -> dict[str, list[str]]:
     }
 
 
+def get_column_label(
+        column: str,
+        language: str = "japanese",
+) -> str:
+    definition = data_definitions.get(column, {})
+
+    return definition.get(
+        language,
+        definition.get("japanese", column),
+    )
+
+
 def debug_dump(data):
     """JSONデータ結果確認用"""
     print(
@@ -285,7 +312,29 @@ class AppAPI:
     def __init__(self) -> None:
         load_staff_info()       # 従業員番号-氏名 対応表読み込み
         load_config()           # 設備関連情報読み込み
-        load_part_no_table()    # 品番対応表読み込み 
+        load_part_no_table()    # 品番対応表読み込み
+        load_data_definitions() # データ定義読み込み
+
+
+    def get_form_labels(self, language: str) -> dict[str, str]:
+        """
+        指定言語のフォームラベルを返す。
+
+        Args:
+            language: "japanese" または "english"
+
+        Returns:
+            dict[str, str]:
+                キー: DBカラム名
+                値: フォームに表示するラベル
+        """
+        if language not in {"japanese", "english"}:
+            language = "japanese"
+
+        return {
+            column: get_column_label(column, language)
+            for column in data_definitions
+        }
 
 
     def get_default_values(
@@ -531,7 +580,7 @@ class AppAPI:
 
             if not desktop_directory.exists():
                 raise FileNotFoundError(
-                    "デスクトップが見つかりません。 \n"
+                    "デスクトップが見つかりません。\n"
                     f"確認した場所: {desktop_directory}"
                 )
 
@@ -539,10 +588,8 @@ class AppAPI:
 
             export_file = desktop_directory / f"export_{timestamp}.csv"
 
-            japanese_names = config.get("japanese_names", {})
-
             header = [
-                japanese_names.get(column, column)
+                get_column_label(column)
                 for column in columns
             ]
 

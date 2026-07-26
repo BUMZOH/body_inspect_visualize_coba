@@ -1,3 +1,93 @@
+let currentLanguage = "japanese";
+
+
+const BUTTON_LABELS = {
+    backup: {
+        japanese: "バックアップ",
+        english: "Backup",
+    },
+
+    exportAlarmComment: {
+        japanese: "ｱﾗｰﾑｺﾒﾝﾄ吸出し",
+        english: "Export Alarm Comments",
+    },
+
+    exportData: {
+        japanese: "データ出力",
+        english: "Export Data",
+    },
+
+    initialize: {
+        japanese: "データ初期化",
+        english: "Initialize Data",
+    },
+
+    update: {
+        japanese: "データ更新",
+        english: "Update Data",
+    },
+
+    register: {
+        japanese: "データ登録",
+        english: "Register Data",
+    },
+
+    processing: {
+        japanese: "処理中...",
+        english: "Processing...",
+    },
+};
+
+function getButtonLabel(buttonName) {
+    const labels = BUTTON_LABELS[buttonName]
+
+    if (!labels) {
+        return buttonName;
+    }
+
+    return labels[currentLanguage] ?? labels.japanese
+}
+
+function applyButtonLabels() {
+    const buttons = document.querySelectorAll("[data-button-name]");
+
+    for (const button of buttons) {
+        const buttonName = button.dataset.buttonName;
+
+        button.textContent = getButtonLabel(buttonName);
+    }
+}
+
+async function applyFormLabels() {
+    const labels = await window.pywebview.api.get_form_labels(currentLanguage);
+
+    const labelElements = document.querySelectorAll("label[data-column]");
+
+    for (const labelElement of labelElements) {
+        const column = labelElement.dataset.column;
+        const labelText = labels[column];
+
+        if (!labelText) {
+            console.warn(`ラベル定義が見つかりません: ${column}`);
+            continue;
+        }
+
+        labelElement.textContent = `${labelText}:`;
+    }
+}
+
+async function changeLanguage(language) {
+    if (language !== "japanese" && language !== "english") {
+        console.error(`未対応の言語です: ${language}`);
+        return;
+    }
+
+    currentLanguage = language;
+
+    await applyFormLabels();
+    applyButtonLabels();
+}
+
 async function getRecordWaitingMachines() {
     const result = await window.pywebview.api.get_record_waiting_machines();
     const machineNos = result.record_waiting_machines;
@@ -159,12 +249,22 @@ async function registerData() {
 
 
 // ボタンへのイベントハンドラ登録
-window.addEventListener("pywebviewready", () => {
+window.addEventListener("pywebviewready", async () => {
+    // 言語切り替えボタン
+    const englishButton = document.getElementById("english_button");
+    const japaneseButton = document.getElementById("japanese_button");
+    englishButton.addEventListener("click", async () => {
+        await changeLanguage("english");
+    });
+    japaneseButton.addEventListener("click", async () => {
+        await changeLanguage("japanese");
+    });
+
     // データ更新ボタン
     const updateButton = document.getElementById("update_button");
     updateButton.addEventListener("click", async () => {
         updateButton.disabled = true;
-        updateButton.textContent = "処理中...";
+        updateButton.textContent = getButtonLabel("processing");
 
         try {
             // 記録待ち設備を検索する。
@@ -186,7 +286,7 @@ window.addEventListener("pywebviewready", () => {
 
         } finally {
             updateButton.disabled = false;
-            updateButton.textContent = "データ更新";
+            updateButton.textContent = getButtonLabel("update");
         }
     });
 
@@ -206,7 +306,7 @@ window.addEventListener("pywebviewready", () => {
     const backupButton = document.getElementById("backup_button");
     backupButton.addEventListener("click", async () => {
         backupButton.disabled = true;
-        backupButton.textContent = "処理中...";
+        backupButton.textContent = getButtonLabel("processing");
 
         try {
             const backupResult = await window.pywebview.api.backup_database();
@@ -227,7 +327,7 @@ window.addEventListener("pywebviewready", () => {
 
         } finally {
             backupButton.disabled = false;
-            backupButton.textContent = "バックアップ";
+            backupButton.textContent = getButtonLabel("backup");
         }
     });
 
@@ -235,7 +335,7 @@ window.addEventListener("pywebviewready", () => {
     const exportAlarmCommentButton = document.getElementById("export_alarm_comment_button");
     exportAlarmCommentButton.addEventListener("click", async () => {
         exportAlarmCommentButton.disabled = true;
-        exportAlarmCommentButton.textContent = "処理中...";
+        exportAlarmCommentButton.textContent = getButtonLabel("processing");
 
         try {
             await window.pywebview.api.export_alarm_comments();
@@ -247,7 +347,7 @@ window.addEventListener("pywebviewready", () => {
 
         } finally {
             exportAlarmCommentButton.disabled = false;
-            exportAlarmCommentButton.textContent = "ｱﾗｰﾑｺﾒﾝﾄ吸出し";
+            exportAlarmCommentButton.textContent = getButtonLabel("exportAlarmComment");
         }
     });
 
@@ -277,7 +377,7 @@ window.addEventListener("pywebviewready", () => {
         }
 
         exportDataButton.disabled = true;
-        exportDataButton.textContent = "処理中...";
+        exportDataButton.textContent = getButtonLabel("processing");
 
         try {
             const exportResult = await window.pywebview.api.export_data(
@@ -301,7 +401,7 @@ window.addEventListener("pywebviewready", () => {
 
         } finally {
             exportDataButton.disabled = false;
-            exportDataButton.textContent = "データ出力";
+            exportDataButton.textContent = getButtonLabel("exportData");
         }
     });
 });

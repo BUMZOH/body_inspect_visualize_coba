@@ -9,12 +9,34 @@ body {
     font-family: sans-serif;
 }
 
-h1 {
+.title-area {
     margin-bottom: 25px;
     background: #444;
     color: white;
     padding: 8px 15px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.title-area h1 {
+    margin: 0;
+    padding: 0;
     font-size: 28px;
+}
+
+.language-button-area {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.language-button-area button {
+    padding: 5px 12px;
+    font-size: 14px;
+    cursor: pointer;
 }
 
 .form-area {
