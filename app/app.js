@@ -204,8 +204,31 @@ window.addEventListener("pywebviewready", () => {
 
     // バックアップボタン
     const backupButton = document.getElementById("backup_button");
-    backupButton.addEventListener("click", () => {
-        alert("現在作成中です。");
+    backupButton.addEventListener("click", async () => {
+        backupButton.disabled = true;
+        backupButton.textContent = "処理中...";
+
+        try {
+            const backupResult = await window.pywebview.api.backup_database();
+
+            if (!backupResult.ok) {
+                alert(
+                    "バックアップに失敗しました。 \n"
+                    + backupResult.message
+                );
+                return;
+            }
+
+            alert(backupResult.message);
+        
+        } catch (error) {
+            console.error(error);
+            alert(`バックアップに失敗しました。\n${error}`);
+
+        } finally {
+            backupButton.disabled = false;
+            backupButton.textContent = "バックアップ";
+        }
     });
 
     // アラームコメント吸出しボタン
@@ -228,6 +251,59 @@ window.addEventListener("pywebviewready", () => {
         }
     });
 
+    // データ出力ボタン
+    const exportDataButton = document.getElementById("export_data_button");
+    exportDataButton.addEventListener("click", async () => {
+        const inputValue = prompt(
+            "今日を含め、何日分のデータを出力しますか？",
+            "1"
+        );
+
+        // キャンセルが押された場合
+        if (inputValue === null) {
+            return;
+        }
+
+        const daysText = inputValue.trim();
+
+        // 入力値チェック
+        // 正規表現に注意 (先頭から最後まで全部数字という意味)
+        if (
+            !/^\d+$/.test(daysText)
+            || Number(daysText) < 1
+        ) {
+            alert("取得日数は1以上の整数で入力してください。");
+            return;
+        }
+
+        exportDataButton.disabled = true;
+        exportDataButton.textContent = "処理中...";
+
+        try {
+            const exportResult = await window.pywebview.api.export_data(
+                Number(daysText)
+            );
+
+            if (!exportResult.ok) {
+                alert(
+                    "CSV出力に失敗しました。\n"
+                    + exportResult.message
+                );
+                return;
+            }
+
+            alert(exportResult.message);
+
+        } catch (error) {
+            console.error(error);
+
+            alert(`CSV出力に失敗しました。\n${error}`);
+
+        } finally {
+            exportDataButton.disabled = false;
+            exportDataButton.textContent = "データ出力";
+        }
+    });
 });
 
 document.getElementById("appearance_check").addEventListener(

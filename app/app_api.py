@@ -1,6 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
+import csv
 import json
+import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -437,8 +439,144 @@ class AppAPI:
 
     def get_record_waiting_machines(self) -> dict[str, list[str]]:
         return search_record_waiting_machine()
+
+
+    def backup_database(self) -> dict[str, str | bool]:
+        """SQLiteデータベースを指定ドライブへ世代管理付きでバックアップする。"""
+        try:
+            backup_drive = str(config.get("backup_drive", "")).strip()
+
+            if not backup_drive:
+                raise ValueError('config.jsonに"backup_drive"が設定されていません')
+
+            # config.jsonでは "E" または "E:" のどちらでも指定可能
+            drive_letter = backup_drive.rstrip(":")
+            backup_directory = Path(f"{drive_letter}:/")
+
+            if not backup_directory.exists():
+                raise FileNotFoundError(f"バックアップ先ドライブが見つかりません: {backup_directory}")
+
+            source_file = db.DB_FILE
+
+            if not source_file.exists():
+                raise FileNotFoundError(f"バックアップ元ファイルが見つかりません: {source_file}")
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+            backup_file = backup_directory / (
+                f"{source_file.stem}_{timestamp}{source_file.suffix}"
+            )
+
+            shutil.copy2(source_file, backup_file)
+
+            # 同じデータベースのバックアップは最新10個だけ残す
+            backup_files = sorted(
+                backup_directory.glob(
+                    f"{source_file.stem}_????????_??????{source_file.suffix}"
+                )
+            )
+
+            for old_file in backup_files[:-10]:
+                old_file.unlink()
+
+            return {
+                "ok": True,
+                "message": (
+                    "バックアップが完了しました。\n"
+                    f"保存先: {backup_file}"
+                ),
+                "backup_file": str(backup_file),
+            }
+
+        except Exception as error:
+            return {
+                "ok": False,
+                "message": str(error),
+            }
+
+
+    def export_data(
+        self,
+        days: int | str,
+    ) -> dict[str, str | bool | int]:
+        """
+        今日を含む指定日数分のinspection_dataをCSVへ出力する。
+
+        Args:
+            days: 今日を含めて取得する日数 (1の場合は今日のデータだけ)
+
+        Returns:
+            dict:
+                ok: 正常終了ならTrue。
+                message: JS側で表示するメッセージ。
+                export_file: 出力したCSVファイルのパス。
+                record_count: CSVへ出力したデータ件数。
+        """
+        try:
+            days = int(days)
+
+            if days < 1:
+                raise ValueError("取得日数は1以上で入力してください")
+
+            end_date = datetime.now().date()
+
+            start_date = end_date - timedelta(days=days - 1)
+
+            columns, rows = db.get_records_for_export(
+                start_date=start_date.isoformat(),
+                end_date=end_date.isoformat(),
+            )
+
+            desktop_directory = Path.home() / "Desktop"
+
+            if not desktop_directory.exists():
+                raise FileNotFoundError(
+                    "デスクトップが見つかりません。 \n"
+                    f"確認した場所: {desktop_directory}"
+                )
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+            export_file = desktop_directory / f"export_{timestamp}.csv"
+
+            japanese_names = config.get("japanese_names", {})
+
+            header = [
+                japanese_names.get(column, column)
+                for column in columns
+            ]
+
+            with export_file.open(
+                mode="w",
+                encoding="utf-8-sig",
+                newline="",
+            ) as file:
+                writer = csv.writer(file)
+
+                writer.writerow(header)
+                writer.writerows(rows)
+
+            return {
+                "ok": True,
+                "message": (
+                    "CSV出力が完了しました。\n"
+                    f"対象期間: {start_date} ～ {end_date}\n"
+                    f"出力件数: {len(rows)}件\n"
+                    f"保存先: {export_file}"
+                ),
+                "export_file": str(export_file),
+                "record_count": len(rows),
+            }
+
+        except Exception as error:
+            return {
+                "ok": False,
+                "message": str(error),
+            }
+
     
 
+    
     def export_alarm_comments(self):
         machines = config["machines"]
 

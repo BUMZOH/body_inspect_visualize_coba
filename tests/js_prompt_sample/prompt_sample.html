@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>prompt サンプル</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        main {
+            width: 400px;
+            margin: 80px auto;
+            padding: 30px;
+            text-align: center;
+            background-color: white;
+            border: 1px solid #cccccc;
+            border-radius: 8px;
+        }
+
+        button {
+            padding: 10px 24px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #result {
+            margin-top: 24px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <h1>prompt サンプル</h1>
+
+        <p>ボタンを押すと入力ダイアログが表示されます。</p>
+
+        <button id="input_button">
+            入力ダイアログを開く
+        </button>
+
+        <p id="result">
+            まだ入力されていません。
+        </p>
+    </main>
+
+    <script>
+        const inputButton = document.getElementById("input_button");
+        const result = document.getElementById("result");
+
+        inputButton.addEventListener("click", () => {
+            const inputValue = prompt(
+                "名前を入力してください。",
+                ""
+            );
+
+            if (inputValue === null) {
+                result.textContent = "キャンセルされました。";
+                return;
+            }
+
+            if (inputValue.trim() === "") {
+                result.textContent = "何も入力されていません。";
+                return;
+            }
+
+            result.textContent = `入力内容: ${inputValue}`;
+        });
+    </script>
+</body>
+</html>
+```

@@ -3,6 +3,12 @@ from common_lib_mw import kv_com
 
 plc_ip_address = "192.168.8.1"
 
+# 品番設定
+# res = kv_com.write_device_u(plc_ip_address, "EM10012", 1)
+# print(res)
+# exit()
+
+
 # カウンタデバイス設定 ------------------------------------
 device_map = {
     "EM10090": 500,         # OK数

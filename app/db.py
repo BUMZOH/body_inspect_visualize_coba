@@ -162,6 +162,43 @@ def get_monthly_serial_no(
     return int(current_max_no) + 1
 
 
+def get_records_for_export(
+        start_date: str,
+        end_date: str
+) -> tuple[list[str], list[tuple]]:
+    """
+    指定期間のinspection_dataをid昇順で取得する。
+
+    Args:
+        start_date: 取得開始日。YYYY-MM-DD形式。
+        end_date: 取得終了日。YYYY-MM-DD形式。
+
+    Returns:
+        tuple[list[str], list[tuple]]:
+            columns: inspection_dataのカラム名一覧。
+            rows: 指定期間に該当するデータ。
+    """
+    with sqlite3.connect(DB_FILE) as conn:
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT *
+            FROM inspection_data
+            WHERE record_date BETWEEN ? AND ?
+            ORDER BY id ASC
+            """,
+            (start_date, end_date),
+        )
+
+        columns = [
+            description[0]
+            for description in cursor.description
+        ]
+
+        rows = cursor.fetchall()
+
+    return columns, rows
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 {
     "update_info": {
-        "last_update_date": "2026-06-10",
-        "comment": "add new machine"
+        "last_update_date": "2026-07-26",
+        "comment": "add backup_drive"
     },
 
 
@@ -79,11 +79,63 @@
 
 
     "japanese_names": {
-        "COMMENT": "以下作成中...     ",
-        "total_length": "全長",
-        "outer_diameter": "外径",
-        "inner_diameter": "内径",
-        "thickness": "厚さ"
-    }
+        "id": "ID",
+        "inspection_machine_no": "検査機No",
+        "record_date": "記録日",
+        "shift_name": "シフト",
+        "part_no": "品番",
+        "nc_process_date": "NC加工日",
+        "nc_machine_no": "NC機番",
+        "monthly_serial_no": "月通しNo",
+        "inspection_start_time": "検査開始日時",
+        "inspection_end_time": "検査終了日時",
+        "change_point_record": "変化点記録",
+        "camera_threshold": "カメラ閾値",
+        "worker_name": "作業者名",
+        "appearance_check": "外観チェック",
+        "appearance_checker": "外観チェック者",
+        "setup_check": "段替えチェック",
+        "remaining_checker": "残品確認者",
+        "camera_5st_checker": "5STカメラチェック者",
+        "remaining_double_checker": "残品Wチェック者",
+        "drop_count": "落下品数",
+        "abnormal_report": "異常報告",
+        "ok_count": "OK品数",
+        "ng_count": "NG品数",
+        "inner_d_ngcount1":"内径NG-1",
+        "inner_d_ngcount2":"内径NG-2",
+        "phi071_ngcount1": "φ0.71NG-1",
+        "phi071_ngcount2": "φ0.71NG-2",
+        "total_length_ngcount1": "全長NG-1",
+        "total_length_ngcount2": "全長NG-2",
+        "taper_thickness_ngcount1": "テーパ厚みNG1",
+        "taper_thickness_ngcount2": "テーパ厚みNG2",
+        "level_gap_ngcount1": "段差NG1",
+        "level_gap_ngcount2": "段差NG2",
+        "bottom_ngcount1": "底NG1",
+        "bottom_ngcount2": "底NG2",
+        "thickness_ngcount1": "厚みNG1",
+        "thickness_ngcount2": "厚みNG2",
+        "side_visual1_ngcount1": "側面外観1NG1",
+        "side_visual1_ngcount2": "側面外観1NG2",
+        "side_visual2_ngcount1": "側面外観2NG1",
+        "side_visual2_ngcount2": "側面外観2NG2",
+        "phi2435_depth_ngcount1": "φ2.435深さNG1",
+        "phi2435_depth_ngcount2": "φ2.435深さNG2",
+        "phi14_depth_ngcount1": "φ1.4深さNG1",
+        "phi14_depth_ngcount2": "φ1.4深さNG2",
+        "st1_alarm_count": "ST1アラーム数",
+        "st2_alarm_count": "ST2アラーム数",
+        "st3_alarm_count": "ST3アラーム数",
+        "st4_alarm_count": "ST4アラーム数",
+        "st5_alarm_count": "ST5アラーム数",
+        "st6_alarm_count": "ST6アラーム数",
+        "st7_alarm_count": "ST7アラーム数",
+        "st8_alarm_count": "ST8アラーム数",
+        "others_alarm_count": "その他アラーム数"
+    },
+
+
+    "backup_drive": "E"
 
 }
