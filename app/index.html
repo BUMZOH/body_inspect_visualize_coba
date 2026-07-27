@@ -9,7 +9,7 @@
 </head>
 <body>
     <header class="title-area">
-        <h1>ボディ検査装置 稼働データ入力画面</h1>
+        <h1 data-en="Body Inspection Machine Operation Data Entry">ボディ検査装置 稼働データ入力画面</h1>
     
         <div class="language-button-area">
             <button id="english_button" type="button">ENGLISH</button>
@@ -22,17 +22,17 @@
     <div class="form-area">
         <!-- 1段目 --------------------------------------------------->
         <div class="form-item">
-            <label for="inspection_machine_no" data-column="inspection_machine_no">検査機番：</label>
+            <label for="inspection_machine_no" data-en="Inspection Machine No.:">検査機番：</label>
             <input id="inspection_machine_no" type="text" readonly>
         </div>
 
         <div class="form-item">
-            <label for="record_date" data-column="record_date">記録日：</label>
+            <label for="record_date" data-en="Record Date:">記録日：</label>
             <input id="record_date" type="date">
         </div>
 
         <div class="form-item">
-            <label for="shift_name" data-column="shift_name">シフト：</label>
+            <label for="shift_name" data-en="Shift:">シフト：</label>
             <select name="" id="shift_name">
                 <option value=""></option>
                 <option value="昼勤">昼勤</option>
@@ -41,38 +41,38 @@
         </div>
 
         <div class="form-item">
-            <label for="part_no" data-column="part_no">品番：</label>
+            <label for="part_no" data-en="Part No.:">品番：</label>
             <input id="part_no" type="text" readonly>
         </div>
 
         <div class="form-item">
-            <label for="nc_process_date" data-column="nc_process_date">NC加工日：</label>
+            <label for="nc_process_date" data-en="NC Process Date:">NC加工日：</label>
             <input id="nc_process_date" type="date">
         </div>
 
         <div class="form-item">
-            <label for="nc_machine_no" data-column="nc_machine_no">NC機番：</label>
+            <label for="nc_machine_no" data-en="NC Machine No.:">NC機番：</label>
             <input id="nc_machine_no" type="text" placeholder="手入力">
         </div>
 
         <div class="form-item">
-            <label for="monthly_serial_no" data-column="monthly_serial_no">月別通しNo：</label>
+            <label for="monthly_serial_no" data-en="Monthly Serial No.:">月別通しNo：</label>
             <input id="monthly_serial_no" type="text" readonly>
         </div>
 
         <div class="form-item">
-            <label for="inspection_start_time" data-column="inspection_start_time">検査開始時間：</label>
+            <label for="inspection_start_time" data-en="Inspection Start Time:">検査開始時間：</label>
             <input id="inspection_start_time" type="datetime-local" step="60">
         </div>
 
         <div class="form-item">
-            <label for="inspection_end_time" data-column="inspection_end_time">検査終了時間：</label>
+            <label for="inspection_end_time" data-en="Inspection End Time:">検査終了時間：</label>
             <input id="inspection_end_time" type="datetime-local" step="60">
         </div>
 
         <!-- 2段目 --------------------------------------------------->
         <div class="form-item">
-            <label for="change_point_record" data-column="change_point_record">変化点記録：</label>
+            <label for="change_point_record" data-en="Change Point Record:">変化点記録：</label>
             <select name="" id="change_point_record">
                 <option value=""></option>
                 <option value="社内">社内</option>
@@ -82,7 +82,7 @@
         </div>
 
         <div class="form-item">
-            <label for="camera_threshold" data-column="camera_threshold">カメラしきい値：</label>
+            <label for="camera_threshold" data-en="Camera Threshold:">カメラしきい値：</label>
             <select name="" id="camera_threshold">
                 <option value=""></option>
                 <option value="正常">正常</option>
@@ -91,12 +91,12 @@
         </div>
 
         <div class="form-item">
-            <label for="worker_name" data-column="worker_name">担当者：</label>
+            <label for="worker_name" data-en="Worker:">担当者：</label>
             <input id="worker_name" type="text" placeholder="バーコード入力">
         </div>
 
         <div class="form-item">
-            <label for="appearance_check" data-column="appearance_check">外観チェック：</label>
+            <label for="appearance_check" data-en="Appearance Check:">外観チェック：</label>
             <select name="" id="appearance_check">
                 <option value=""></option>
                 <option value="正常">正常</option>
@@ -105,12 +105,12 @@
         </div>
 
         <div class="form-item">
-            <label for="appearance_checker" data-column="appearance_checker">外観チェック者：</label>
+            <label for="appearance_checker" data-en="Appearance Checker:">外観チェック者：</label>
             <input id="appearance_checker" type="text" placeholder="バーコード入力">
         </div>
 
         <div class="form-item">
-            <label for="setup_check" data-column="setup_check">段取時確認作業：</label>
+            <label for="setup_check" data-en="Setup Check:">段取時確認作業：</label>
             <select name="" id="setup_check">
                 <option value=""></option>
                 <option value="あり">あり</option>
@@ -120,28 +120,28 @@
         </div>
 
         <div class="form-item">
-            <label for="remaining_checker" data-column="remaining_checker">残留品確認者：</label>
+            <label for="remaining_checker" data-en="Remaining Part Checker:">残留品確認者：</label>
             <input id="remaining_checker" type="text">
         </div>
 
         <div class="form-item">
-            <label for="camera_5st_checker" data-column="camera_5st_checker">5STカメラ確認者：</label>
+            <label for="camera_5st_checker" data-en="5ST Camera Checker:">5STカメラ確認者：</label>
             <input id="camera_5st_checker" type="text">
         </div>
 
         <div class="form-item">
-            <label for="remaining_double_checker" data-column="remaining_double_checker">残留品Wチェック者：</label>
+            <label for="remaining_double_checker" data-en="RemainingPt WChecker:">残留品Wチェック者：</label>
             <input id="remaining_double_checker" type="text" placeholder="バーコード入力">
         </div>
 
         <!-- 3段目 --------------------------------------------------->
         <div class="form-item">
-            <label for="drop_count" data-column="drop_count">落下品数：</label>
+            <label for="drop_count" data-en="Dropped Part Count:">落下品数：</label>
             <input id="drop_count" type="text" placeholder="手入力">
         </div>
 
         <div class="form-item note">
-            <label for="abnormal_report" data-column="abnormal_report">変化点／異常報告：</label>
+            <label for="abnormal_report" data-en="Change Point / Abnormal Report:">変化点／異常報告：</label>
             <input id="abnormal_report" type="text">
         </div>
     </div>
@@ -150,11 +150,11 @@
 
     <!------- テーブル表示部 ------->
     <div class="table-area">
-        <h2>良品数／不良品数</h2>
+        <h2 data-en="OK / NG Count">良品数／不良品数</h2>
         <table id="count_summary">
             <tr>
-                <th>良品数</th>
-                <th>不良数</th>
+                <th data-en="OK Count">良品数</th>
+                <th data-en="NG Count">不良数</th>
             </tr>
             <tr>
                 <td id="ok_count" class="db-item">0</td>
@@ -162,24 +162,24 @@
             </tr>
         </table>
 
-        <h2>項目別不良数</h2>
+        <h2 data-en="NG Count by Item">項目別不良数</h2>
         <table id="ng_count_detail">
             <tr>
-                <th>検査項目</th>
-                <th>内径</th>
-                <th>φ0.71</th>
-                <th>全長</th>
-                <th>テーパ厚み</th>
-                <th>段差</th>
-                <th>底</th>
-                <th>厚み</th>
-                <th>側面1</th>
-                <th>側面2</th>
-                <th>φ2.435深さ</th>
-                <th>φ1.4深さ</th>
+                <th data-en="Inspection Item">検査項目</th>
+                <th data-en="Inner Diameter">内径</th>
+                <th data-en="φ0.71">φ0.71</th>
+                <th data-en="Overall Length">全長</th>
+                <th data-en="Taper Thickness">テーパ厚み</th>
+                <th data-en="Level Gap">段差</th>
+                <th data-en="Bottom">底</th>
+                <th data-en="Thickness">厚み</th>
+                <th data-en="Side 1">側面1</th>
+                <th data-en="Side 2">側面2</th>
+                <th data-en="φ2.435 Depth">φ2.435深さ</th>
+                <th data-en="φ1.4 Depth">φ1.4深さ</th>
             </tr>
             <tr>
-                <th>初回検査時</th>
+                <th data-en="Initial Inspection">初回検査時</th>
                 <td id="inner_d_ngcount1" class="db-item">0</td>
                 <td id="phi071_ngcount1" class="db-item">0</td> 
                 <td id="total_length_ngcount1" class="db-item">0</td> 
@@ -193,7 +193,7 @@
                 <td id="phi14_depth_ngcount1" class="db-item">0</td> 
             </tr>
             <tr>
-                <th>再検査時</th>
+                <th data-en="Reinspection">再検査時</th>
                 <td id="inner_d_ngcount2" class="db-item">0</td>
                 <td id="phi071_ngcount2" class="db-item">0</td>
                 <td id="total_length_ngcount2" class="db-item">0</td>
@@ -208,7 +208,7 @@
             </tr>
         </table>
 
-        <h2>ステーション別アラーム発生数</h2>
+        <h2 data-en="Alarm Count by Station">ステーション別アラーム発生数</h2>
         <table id="alarm_info">
             <tr>
                 <th>1ST</th>
@@ -219,7 +219,7 @@
                 <th>6ST</th>
                 <th>7ST</th>
                 <th>8ST</th>
-                <th>その他</th>
+                <th data-en="Others">その他</th>
             </tr>
             <tr>
                 <td id="st1_alarm_count" class="db-item">0</td>
@@ -239,15 +239,15 @@
 
     <div class="button-area">
         <div class="button-group-left">
-            <button id="backup_button" data-button-name="backup">バックアップ</button>
-            <button id="export_alarm_comment_button" data-button-name="exportAlarmComment">ｱﾗｰﾑｺﾒﾝﾄ吸出し</button>
-            <button id="export_data_button" data-button-name="exportData">データ出力</button>
+            <button id="backup_button" data-en="Backup">バックアップ</button>
+            <button id="export_alarm_comment_button" data-en="Export Alarm Comment">ｱﾗｰﾑｺﾒﾝﾄ吸出し</button>
+            <button id="export_data_button" data-en="Export Data">データ出力</button>
         </div>
 
         <div class="button-group-right">
-            <button id="initialize_button" data-button-name="initialize">データ初期化</button>
-            <button id="update_button" data-button-name="update">データ更新</button>
-            <button id="register_button" data-button-name="register">データ登録</button>
+            <button id="initialize_button" data-en="Initialize Data">データ初期化</button>
+            <button id="update_button" data-en="Update Data">データ更新</button>
+            <button id="register_button" data-en="Register Data">データ登録</button>
         </div>
     </div>
 

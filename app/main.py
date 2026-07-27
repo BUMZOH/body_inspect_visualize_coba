@@ -27,7 +27,7 @@ def main() -> None:
 
     webview.start(
         gui="edgechromium",
-        debug=True,
+        debug=False,
     )
 
 

@@ -284,16 +284,9 @@ def search_record_waiting_machine() -> dict[str, list[str]]:
     }
 
 
-def get_column_label(
-        column: str,
-        language: str = "japanese",
-) -> str:
+def get_column_label(column: str) -> str:
     definition = data_definitions.get(column, {})
-
-    return definition.get(
-        language,
-        definition.get("japanese", column),
-    )
+    return definition.get("japanese", column)
 
 
 def debug_dump(data):
@@ -314,27 +307,6 @@ class AppAPI:
         load_config()           # 設備関連情報読み込み
         load_part_no_table()    # 品番対応表読み込み
         load_data_definitions() # データ定義読み込み
-
-
-    def get_form_labels(self, language: str) -> dict[str, str]:
-        """
-        指定言語のフォームラベルを返す。
-
-        Args:
-            language: "japanese" または "english"
-
-        Returns:
-            dict[str, str]:
-                キー: DBカラム名
-                値: フォームに表示するラベル
-        """
-        if language not in {"japanese", "english"}:
-            language = "japanese"
-
-        return {
-            column: get_column_label(column, language)
-            for column in data_definitions
-        }
 
 
     def get_default_values(

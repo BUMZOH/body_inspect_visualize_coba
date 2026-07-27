@@ -1,91 +1,24 @@
-let currentLanguage = "japanese";
+function changeLanguage(language) {
+    document.documentElement.lang = language;
 
+    for (const element of document.querySelectorAll("[data-en]")) {
+        element.dataset.ja ??= element.textContent.trim();  // 初回時に日本語表示名格納
 
-const BUTTON_LABELS = {
-    backup: {
-        japanese: "バックアップ",
-        english: "Backup",
-    },
-
-    exportAlarmComment: {
-        japanese: "ｱﾗｰﾑｺﾒﾝﾄ吸出し",
-        english: "Export Alarm Comments",
-    },
-
-    exportData: {
-        japanese: "データ出力",
-        english: "Export Data",
-    },
-
-    initialize: {
-        japanese: "データ初期化",
-        english: "Initialize Data",
-    },
-
-    update: {
-        japanese: "データ更新",
-        english: "Update Data",
-    },
-
-    register: {
-        japanese: "データ登録",
-        english: "Register Data",
-    },
-
-    processing: {
-        japanese: "処理中...",
-        english: "Processing...",
-    },
-};
-
-function getButtonLabel(buttonName) {
-    const labels = BUTTON_LABELS[buttonName]
-
-    if (!labels) {
-        return buttonName;
-    }
-
-    return labels[currentLanguage] ?? labels.japanese
-}
-
-function applyButtonLabels() {
-    const buttons = document.querySelectorAll("[data-button-name]");
-
-    for (const button of buttons) {
-        const buttonName = button.dataset.buttonName;
-
-        button.textContent = getButtonLabel(buttonName);
+        // 以下JS三項演算子に注意
+        element.textContent = (
+            language === "en"
+            ? element.dataset.en
+            : element.dataset.ja
+        );
     }
 }
 
-async function applyFormLabels() {
-    const labels = await window.pywebview.api.get_form_labels(currentLanguage);
-
-    const labelElements = document.querySelectorAll("label[data-column]");
-
-    for (const labelElement of labelElements) {
-        const column = labelElement.dataset.column;
-        const labelText = labels[column];
-
-        if (!labelText) {
-            console.warn(`ラベル定義が見つかりません: ${column}`);
-            continue;
-        }
-
-        labelElement.textContent = `${labelText}:`;
-    }
-}
-
-async function changeLanguage(language) {
-    if (language !== "japanese" && language !== "english") {
-        console.error(`未対応の言語です: ${language}`);
-        return;
-    }
-
-    currentLanguage = language;
-
-    await applyFormLabels();
-    applyButtonLabels();
+function restoreButtonText(button) {
+    button.textContent = (
+        document.documentElement.lang === "en"
+        ? button.dataset.en
+        : button.dataset.ja
+    );
 }
 
 async function getRecordWaitingMachines() {
@@ -253,18 +186,19 @@ window.addEventListener("pywebviewready", async () => {
     // 言語切り替えボタン
     const englishButton = document.getElementById("english_button");
     const japaneseButton = document.getElementById("japanese_button");
-    englishButton.addEventListener("click", async () => {
-        await changeLanguage("english");
+    englishButton.addEventListener("click", () => {
+        changeLanguage("en");
     });
-    japaneseButton.addEventListener("click", async () => {
-        await changeLanguage("japanese");
+    japaneseButton.addEventListener("click", () => {
+        changeLanguage("ja");
     });
+    changeLanguage("ja"); // 起動時に日本語表示保存しておく
 
     // データ更新ボタン
     const updateButton = document.getElementById("update_button");
     updateButton.addEventListener("click", async () => {
         updateButton.disabled = true;
-        updateButton.textContent = getButtonLabel("processing");
+        updateButton.textContent = "処理中...";
 
         try {
             // 記録待ち設備を検索する。
@@ -286,7 +220,7 @@ window.addEventListener("pywebviewready", async () => {
 
         } finally {
             updateButton.disabled = false;
-            updateButton.textContent = getButtonLabel("update");
+            restoreButtonText(updateButton);
         }
     });
 
@@ -306,7 +240,7 @@ window.addEventListener("pywebviewready", async () => {
     const backupButton = document.getElementById("backup_button");
     backupButton.addEventListener("click", async () => {
         backupButton.disabled = true;
-        backupButton.textContent = getButtonLabel("processing");
+        backupButton.textContent = "処理中...";
 
         try {
             const backupResult = await window.pywebview.api.backup_database();
@@ -327,7 +261,7 @@ window.addEventListener("pywebviewready", async () => {
 
         } finally {
             backupButton.disabled = false;
-            backupButton.textContent = getButtonLabel("backup");
+            restoreButtonText(backupButton);
         }
     });
 
@@ -335,7 +269,7 @@ window.addEventListener("pywebviewready", async () => {
     const exportAlarmCommentButton = document.getElementById("export_alarm_comment_button");
     exportAlarmCommentButton.addEventListener("click", async () => {
         exportAlarmCommentButton.disabled = true;
-        exportAlarmCommentButton.textContent = getButtonLabel("processing");
+        exportAlarmCommentButton.textContent = "処理中...";
 
         try {
             await window.pywebview.api.export_alarm_comments();
@@ -347,7 +281,7 @@ window.addEventListener("pywebviewready", async () => {
 
         } finally {
             exportAlarmCommentButton.disabled = false;
-            exportAlarmCommentButton.textContent = getButtonLabel("exportAlarmComment");
+            restoreButtonText(exportAlarmCommentButton);
         }
     });
 
@@ -377,7 +311,7 @@ window.addEventListener("pywebviewready", async () => {
         }
 
         exportDataButton.disabled = true;
-        exportDataButton.textContent = getButtonLabel("processing");
+        exportDataButton.textContent = "処理中...";
 
         try {
             const exportResult = await window.pywebview.api.export_data(
@@ -401,7 +335,7 @@ window.addEventListener("pywebviewready", async () => {
 
         } finally {
             exportDataButton.disabled = false;
-            exportDataButton.textContent = getButtonLabel("exportData");
+            restoreButtonText(exportDataButton);
         }
     });
 });

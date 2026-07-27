@@ -8,7 +8,6 @@
     "inspection_machine_no": {
         "type": "INTEGER",
         "japanese": "検査機番",
-        "english": "Inspection Machine No.",
         "required": true
     },
 
@@ -16,21 +15,18 @@
         "type": "TEXT",
         "format": "date",
         "japanese": "記録日",
-        "english": "Record Date",
         "required": true
     },
 
     "shift_name": {
         "type": "TEXT",
         "japanese": "シフト",
-        "english": "Shift",
         "required": true
     },
 
     "part_no": {
         "type": "TEXT",
         "japanese": "品番",
-        "english": "Part No.",
         "required": true
     },
 
@@ -38,21 +34,18 @@
         "type": "TEXT",
         "format": "date",
         "japanese": "NC加工日",
-        "english": "NC Process Date",
         "required": false
     },
 
     "nc_machine_no": {
         "type": "INTEGER",
         "japanese": "NC機番",
-        "english": "NC Machine No.",
         "required": false
     },
 
     "monthly_serial_no": {
         "type": "INTEGER",
         "japanese": "月別通しNo",
-        "english": "Monthly Serial No.",
         "required": false
     },
 
@@ -60,7 +53,6 @@
         "type": "TEXT",
         "format": "datetime",
         "japanese": "検査開始時間",
-        "english": "Inspection Start Time",
         "required": true
     },
 
@@ -68,84 +60,72 @@
         "type": "TEXT",
         "format": "datetime",
         "japanese": "検査終了時間",
-        "english": "Inspection End Time",
         "required": true
     },
 
     "change_point_record": {
         "type": "TEXT",
         "japanese": "変化点記録",
-        "english": "Change Point Record",
         "required": false
     },
 
     "camera_threshold": {
         "type": "TEXT",
         "japanese": "カメラしきい値",
-        "english": "Camera Threshold",
         "required": false
     },
 
     "worker_name": {
         "type": "TEXT",
         "japanese": "担当者",
-        "english": "Worker",
         "required": true
     },
 
     "appearance_check": {
         "type": "TEXT",
         "japanese": "外観チェック",
-        "english": "Appearance Check",
         "required": false
     },
 
     "appearance_checker": {
         "type": "TEXT",
         "japanese": "外観チェック者",
-        "english": "Appearance Checker",
         "required": false
     },
 
     "setup_check": {
         "type": "TEXT",
         "japanese": "段取時確認作業",
-        "english": "Setup Check",
         "required": false
     },
 
     "remaining_checker": {
         "type": "TEXT",
         "japanese": "残留品確認者",
-        "english": "Remaining Part Checker",
         "required": false
     },
 
     "camera_5st_checker": {
         "type": "TEXT",
         "japanese": "5STカメラ確認者",
-        "english": "5ST Camera Checker",
         "required": false
     },
 
     "remaining_double_checker": {
         "type": "TEXT",
         "japanese": "残留品Wチェック者",
-        "english": "RemainingPt WChecker",
         "required": false
     },
 
     "drop_count": {
         "type": "INTEGER",
         "japanese": "落下品数",
-        "english": "Dropped Part Count",
         "required": false
     },
 
     "abnormal_report": {
         "type": "TEXT",
         "japanese": "変化点／異常報告",
-        "english": "Change Point / Abnormal Report",
         "required": false
     },
 
