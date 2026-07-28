@@ -71,8 +71,32 @@ def load_data_definitions():
         data_definitions = json.load(file)
 
 
+def is_empty_value(value) -> bool:
+    """
+    値が未入力か確認する。
+
+    未入力とする値:
+    - None
+    - 空文字
+    - 空白だけの文字列
+
+    数値の0は未入力としない。
+    """
+    if value is None:
+        return True
+
+    # value が文字列だった場合、空文字かどうかを判定する
+    if isinstance(value, str):
+        return value.strip() == ""
+
+    return False
+
+
 def convert_empty_to_none(value):
-    if value == "":
+    """
+    空欄をNoneへ変換する。
+    """
+    if is_empty_value(value):
         return None
     
     return value
@@ -95,15 +119,215 @@ def get_required_columns() -> dict[str, str]:
 
 
 def validate_required(data: dict) -> list[str]:
+    """
+    data_definition.jsonでrequiredがtrueの項目を確認する。
+    """
     errors = []
     required_columns = get_required_columns()
 
     for column, label in required_columns.items():
-        print(f"{column} : {data.get(column)}")
+        value = data.get(column)
 
-        if not data.get(column):
+        if is_empty_value(value):
             errors.append(f"{label}が未入力です")
     
+    return errors
+
+
+def validate_data_type(
+        value,
+        data_type: str,
+        label: str,
+) -> str | None:
+    """
+    data_definition.jsonのtypeに従って、
+    入力値のデータ型を確認する。
+
+    正常な場合: None
+    異常な場合: エラーメッセージ
+    """
+    if is_empty_value(value):
+        return None
+
+    if data_type == "INTEGER":
+        try:
+            int(value)
+        except (TypeError, ValueError):
+            return f"{label}は整数で入力してください"
+
+    elif data_type == "TEXT":
+        if not isinstance(value, str):
+            return f"{label}は文字列で入力してください"
+
+    else:
+        return (
+            f"{label}に未対応のデータ型"
+            f"「{data_type}」が設定されています"
+        )
+
+    return None
+
+
+def validate_record_types(data: dict) -> list[str]:
+    """
+    data_definition.jsonのtypeに従って、
+    登録データ全体の型を確認する。
+    """
+    errors = []
+
+    for column, definition in data_definitions.items():
+        value = data.get(column)
+        data_type = definition.get("type")
+        label = definition.get("japanese", column)
+
+        if data_type is None:
+            continue
+
+        error = validate_data_type(
+            value=value,
+            data_type=data_type,
+            label=label,
+        )
+
+        if error:
+            errors.append(error)
+
+    return errors
+
+
+def validate_format(
+        value,
+        format_name: str,
+        label: str,
+) -> str | None:
+    """
+    data_definition.jsonのformatに従って、
+    日付や日時の形式を確認する。
+
+    正常な場合: None
+    異常な場合: エラーメッセージ
+    """ 
+    if is_empty_value(value):
+        return None
+
+    if not isinstance(value, str):
+        return f"{label}の形式が正しくありません"
+
+    if format_name == "date":
+        try:
+            datetime.strptime(value, "%Y-%m-%d")
+        except ValueError:
+            return f"{label}はYYYY-MM-DD形式で入力してください"
+
+    elif format_name == "datetime":
+        normalized_value = value.replace("T", " ")
+
+        datetime_formats = [
+            "%Y-%m-%d %H:%M",
+            "%Y-%m-%d %H:%M:%S",
+        ]
+
+        for datetime_format in datetime_formats:
+            try:
+                datetime.strptime(
+                    normalized_value,
+                    datetime_format,
+                )
+                return None
+
+            except ValueError:
+                continue
+
+        return (f"{label}はYYYY-MM-DD HH:MM形式で入力してください")
+
+    else:
+        return(f"{label}に未対応の形式「{format_name}」が設定されています")
+
+    return None
+
+
+def validate_record_formats(data: dict) -> list[str]:
+    """
+    data_definition.jsonのformatに従って、
+    登録データ全体の形式を確認する。
+    """
+    errors = []
+
+    for column, definition in data_definitions.items():
+        format_name = definition.get("format")
+
+        if format_name is None:
+            continue
+
+        value = data.get(column)
+        label = definition.get("japanese", column)
+
+        error = validate_format(
+            value=value,
+            format_name=format_name,
+            label=label,
+        )
+
+        if error:
+            errors.append(error)
+
+    return errors
+
+
+def validate_reference(
+        value,
+        reference_name: str,
+        label: str,
+) -> str | None:
+    """
+    data_definition.jsonのreferenceに従って、
+    マスタに存在する値か確認する。
+    """
+    if is_empty_value(value):
+        return None
+
+    if reference_name == "staff":
+        if value not in staff.values():
+            return f"{label}がマスタに存在しません"
+
+    elif reference_name == "part_no":
+        if value not in part_no_table.values():
+            return f"{label}がマスタに存在しません"
+
+    else:
+        return (
+            f"{label}に未対応の参照先"
+            f"「{reference_name}」が設定されています"
+        )
+
+    return None
+
+
+def validate_record_references(data: dict) -> list[str]:
+    """
+    data_definition.jsonのreferenceに従って、
+    登録データ全体の参照チェックを行う。
+    """
+    errors = []
+
+    for column, definition in data_definitions.items():
+        reference_name = definition.get("reference")
+
+        if reference_name is None:
+            continue
+
+        value = data.get(column)
+        label = definition.get("japanese", column)
+
+        error = validate_reference(
+            value=value,
+            reference_name=reference_name,
+            label=label,
+        )
+
+        if error:
+            errors.append(error)
+
     return errors
 
 
@@ -147,6 +371,10 @@ def get_integer_columns() -> set[str]:
 
 def normalize_record(data: dict) -> tuple[dict, list[str]]:
     errors = validate_required(data)
+    errors.extend(validate_record_types(data))
+    errors.extend(validate_record_formats(data))
+    errors.extend(validate_record_references(data))
+
     record = {}
 
     integer_columns = get_integer_columns()
@@ -160,8 +388,7 @@ def normalize_record(data: dict) -> tuple[dict, list[str]]:
             try:
                 # Noneなら0、None以外ならint変換
                 record[key] = int(value) if value is not None else 0
-            except ValueError:
-                errors.append(f"{key}は数値で入力してください")
+            except (TypeError, ValueError):
                 record[key] = 0
 
         elif key in datetime_columns:

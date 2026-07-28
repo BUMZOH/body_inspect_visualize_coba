@@ -26,6 +26,7 @@
 
     "part_no": {
         "type": "TEXT",
+        "reference": "part_no",
         "japanese": "品番",
         "required": true
     },
@@ -34,13 +35,13 @@
         "type": "TEXT",
         "format": "date",
         "japanese": "NC加工日",
-        "required": false
+        "required": true
     },
 
     "nc_machine_no": {
         "type": "INTEGER",
         "japanese": "NC機番",
-        "required": false
+        "required": true
     },
 
     "monthly_serial_no": {
@@ -66,17 +67,18 @@
     "change_point_record": {
         "type": "TEXT",
         "japanese": "変化点記録",
-        "required": false
+        "required": true
     },
 
     "camera_threshold": {
         "type": "TEXT",
         "japanese": "カメラしきい値",
-        "required": false
+        "required": true
     },
 
     "worker_name": {
         "type": "TEXT",
+        "reference": "staff",
         "japanese": "担当者",
         "required": true
     },
@@ -84,35 +86,39 @@
     "appearance_check": {
         "type": "TEXT",
         "japanese": "外観チェック",
-        "required": false
+        "required": true
     },
 
     "appearance_checker": {
         "type": "TEXT",
+        "reference": "staff",
         "japanese": "外観チェック者",
-        "required": false
+        "required": true
     },
 
     "setup_check": {
         "type": "TEXT",
         "japanese": "段取時確認作業",
-        "required": false
+        "required": true
     },
 
     "remaining_checker": {
         "type": "TEXT",
+        "reference": "staff",
         "japanese": "残留品確認者",
         "required": false
     },
 
     "camera_5st_checker": {
         "type": "TEXT",
+        "reference": "staff",
         "japanese": "5STカメラ確認者",
         "required": false
     },
 
     "remaining_double_checker": {
         "type": "TEXT",
+        "reference": "staff",
         "japanese": "残留品Wチェック者",
         "required": false
     },
