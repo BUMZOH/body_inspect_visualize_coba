@@ -27,6 +27,12 @@ body {
     font-size: 28px;
 }
 
+.version {
+    font-size: 14px;
+    color: #AAA;
+    margin-left: 12px;
+}
+
 .language-button-area {
     display: flex;
     gap: 8px;
@@ -102,7 +108,7 @@ td {
     justify-content: space-between;
     align-items: center;
 
-    margin-top: 20px;
+    margin-top: 50px;
 }
 
 .button-group-left,

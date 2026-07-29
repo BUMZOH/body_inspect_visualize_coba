@@ -375,21 +375,27 @@ def normalize_record(data: dict) -> tuple[dict, list[str]]:
     errors.extend(validate_record_formats(data))
     errors.extend(validate_record_references(data))
 
+    if errors:
+        return {}, errors
+
     record = {}
 
     integer_columns = get_integer_columns()
     datetime_columns = get_datetime_columns()
 
 
-    for key, value in data.items():
-        value = convert_empty_to_none(value)
+    for key in data_definitions:
+        if key == "id":
+            continue
+
+        if key not in data:
+            continue
+
+        value = convert_empty_to_none(data.get(key))
 
         if key in integer_columns:
-            try:
-                # Noneなら0、None以外ならint変換
-                record[key] = int(value) if value is not None else 0
-            except (TypeError, ValueError):
-                record[key] = 0
+            # Noneなら0、None以外ならint変換
+            record[key] = int(value) if value is not None else 0
 
         elif key in datetime_columns:
             record[key] = convert_datetime(value)
@@ -397,7 +403,7 @@ def normalize_record(data: dict) -> tuple[dict, list[str]]:
         else:
             record[key] = value
 
-    return record, errors
+    return record, []
 
 
 def get_inspection_start_time(machine_no: str):
@@ -690,19 +696,20 @@ class AppAPI:
 
 
     def backup_database(self) -> dict[str, str | bool]:
-        """SQLiteデータベースを指定ドライブへ世代管理付きでバックアップする。"""
+        """SQLiteデータベースを指定フォルダへ世代管理付きでバックアップする。"""
         try:
-            backup_drive = str(config.get("backup_drive", "")).strip()
+            backup_directory_text = str(
+                config.get("backup_directory", "")
+            ).strip()
 
-            if not backup_drive:
-                raise ValueError('config.jsonに"backup_drive"が設定されていません')
+            if not backup_directory_text:
+                raise ValueError(
+                    'config.jsonに"backup_directory"が設定されていません'
+                )
 
-            # config.jsonでは "E" または "E:" のどちらでも指定可能
-            drive_letter = backup_drive.rstrip(":")
-            backup_directory = Path(f"{drive_letter}:/")
+            backup_directory = Path(backup_directory_text)
 
-            if not backup_directory.exists():
-                raise FileNotFoundError(f"バックアップ先ドライブが見つかりません: {backup_directory}")
+            backup_directory.mkdir(parents=True, exist_ok=True)
 
             source_file = db.DB_FILE
 

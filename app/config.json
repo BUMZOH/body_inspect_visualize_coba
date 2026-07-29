@@ -1,7 +1,7 @@
 {
     "update_info": {
-        "last_update_date": "2026-07-26",
-        "comment": "add backup_drive"
+        "last_update_date": "2026-07-29",
+        "comment": "change backup destination to directory path"
     },
 
 
@@ -78,6 +78,6 @@
     },
     
 
-    "backup_drive": "E"
+    "backup_directory": "D:\\backup"
 
 }

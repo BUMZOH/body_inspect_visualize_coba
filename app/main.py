@@ -23,6 +23,7 @@ def main() -> None:
         js_api=api,
         width=1600,
         height=900,
+        maximized=True,
     )
 
     webview.start(
