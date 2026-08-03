@@ -175,6 +175,8 @@ async function registerData() {
         alert(resetResult.message);
     }
 
+    alert("データ登録完了しました");
+
     resetAll();
 }
 
