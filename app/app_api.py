@@ -416,8 +416,24 @@ def get_inspection_start_time(machine_no: str):
     hour = int(kv_com.read_device_u(plc_ip_address, "EM10003"))
     minute = int(kv_com.read_device_u(plc_ip_address, "EM10004"))
 
-    dt = datetime(year, month, day, hour, minute)
-    # print(dt.strftime("%Y-%m-%d %H:%M"))
+    date_time_values = (year, month, day, hour, minute)
+
+    # PLCの検査開始時間が初期値のままの場合。
+    if all(value == 0 for value in date_time_values):
+        raise ValueError(
+            "PLCに検査開始時間が記録されていません(全て0)。"
+        )
+
+    try:
+        dt = datetime(year, month, day, hour, minute)
+
+    except ValueError as error:
+        raise ValueError(
+            "PLCから取得した検査開始時間が正しくありません。\n"
+            f"取得値: {year:04d}/{month:02d}/{day:02d} "
+            f"{hour:02d}:{minute:02d}\n"
+            "PLCデバイス EM10000～EM10004 を確認してください。"
+        ) from error
 
     return dt.strftime("%Y-%m-%d %H:%M")
 
@@ -595,6 +611,10 @@ class AppAPI:
         inspection_end_time: str
     ) -> dict:
         """PLCの検査数・不良数・アラーム件数を取得する。"""
+
+
+
+        
         machine_no = int(inspection_machine_no)
 
         if not inspection_start_time or not inspection_end_time:
