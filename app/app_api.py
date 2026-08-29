@@ -590,7 +590,8 @@ class AppAPI:
             "monthly_serial_no": monthly_serial_no,
             "inspection_start_time": get_inspection_start_time(inspection_machine_no),
             "inspection_end_time": now.strftime("%Y-%m-%d %H:%M"),
-            "change_point_record": "社内"
+            "change_point_record": "社内",
+            "setup_check": "なし"
         }
     
 
@@ -871,7 +872,9 @@ class AppAPI:
 
     def reset_plc_devices(self, inspection_machine_no: str) -> dict:
         """
-        指定設備のEM10000～EM10999を0リセットする。
+        PLCの以下のデバイスをリセットする
+        EM10000～EM10999 (自動記録項目など)
+        DM4400～DM4403 (パレット内製品カウンタ)
         """
         try:
             machine_config = config["machines"].get(inspection_machine_no)
@@ -883,17 +886,24 @@ class AppAPI:
             
             plc_ip_address = machine_config["plc_ip_address"]
 
+            # EM10000～EM10999 をリセット
             kv_com.write_devices_u(
                 ip_add=plc_ip_address,
                 device="EM10000",
                 values=[0] * 1000,
             )
 
+            # DM4400～DM4403 をリセット
+            kv_com.write_devices_u(
+                ip_add=plc_ip_address,
+                device="DM4400",
+                values=[0] * 4,
+            )
+
             return {
                 "ok": True,
                 "message": (
-                    "PLCデバイスをリセットしました。\n"
-                    "対象: EM10000 - EM10999"
+                    "PLCデバイスをリセットしました"
                 ),
             }
 

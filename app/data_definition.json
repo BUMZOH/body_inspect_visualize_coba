@@ -147,6 +147,18 @@
         "required": false
     },
 
+    "ngcount_total1": {
+        "type": "INTEGER",
+        "japanese": "初回NG合計",
+        "required": false
+    },
+
+    "ngcount_total2": {
+        "type": "INTEGER",
+        "japanese": "再検査NG合計",
+        "required": false
+    },
+
     "inner_d_ngcount1": {
         "type": "INTEGER",
         "japanese": "内径NG-1",

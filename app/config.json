@@ -74,7 +74,10 @@
         "phi2435_depth_ngcount2": "EM10222",
 
         "phi14_depth_ngcount1": "EM10124",
-        "phi14_depth_ngcount2": "EM10224"
+        "phi14_depth_ngcount2": "EM10224",
+
+        "ngcount_total1": "EM10102",
+        "ngcount_total2": "EM10202"
     },
     
 

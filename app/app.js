@@ -64,6 +64,7 @@ function applyDefaultValues(defaultValues) {
     setInputValue("inspection_start_time", defaultValues.inspection_start_time);
     setInputValue("inspection_end_time", defaultValues.inspection_end_time);
     setInputValue("change_point_record", defaultValues.change_point_record);
+    setInputValue("setup_check", defaultValues.setup_check);
 }
 
 async function updateDefaultValues(machineNo) {

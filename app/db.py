@@ -49,6 +49,9 @@ def init_db():
         ok_count INTEGER,
         ng_count INTEGER,
 
+        ngcount_total1 INTEGER,
+        ngcount_total2 INTEGER,
+
         inner_d_ngcount1 INTEGER,
         inner_d_ngcount2 INTEGER,
 
