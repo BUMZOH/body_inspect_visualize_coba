@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factory Visualization Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="dashboard">
+        <!-- =========================
+             OPERATING TIME
+        ========================== -->
+        <section class="panel operating-panel">
+            <div class="section-heading">
+                <div>
+                    <span class="section-title">OPERATING TIME</span>
+                    <span class="section-title-ja">稼働時間</span>
+                </div>
+                <div class="last-update">
+                    LAST UPDATE:
+                    <span id="lastUpdate">2026-09-06 10:40</span>
+                </div>
+            </div>
+
+            <div class="operating-content">
+                <!-- DAY SHIFT -->
+                <aside class="staff-area">
+                    <h2>DAY SHIFT</h2>
+                    <div class="staff-grid" id="dayStaff"></div>
+                </aside>
+
+                <!-- CENTER -->
+                <div class="operating-main">
+                    <div class="elapsed-time">
+                        ELAPSED TIME = <span id="elapsedTimeTop">3:45</span>
+                    </div>
+
+                    <div class="shift-ratio">
+                        <div class="ratio day-ratio" id="dayRatio">
+                            <div class="ratio-minutes"><span id="dayMinutes">145</span> min</div>
+                            <div class="ratio-percent"><span id="dayPercent">46</span>%</div>
+                        </div>
+
+                        <div class="ratio night-ratio" id="nightRatio">
+                            <div class="ratio-minutes"><span id="nightMinutes">156</span> min</div>
+                            <div class="ratio-percent"><span id="nightPercent">54</span>%</div>
+                        </div>
+                    </div>
+
+                    <div class="mini-title">累積生産数</div>
+                    <div class="weekly-table-wrap">
+                        <table class="weekly-table">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Fri</th>
+                                    <th>Mon</th>
+                                    <th>Tue</th>
+                                    <th>Wed</th>
+                                    <th>Thu</th>
+                                    <th>Fri</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th>DAY</th>
+                                    <td>432</td>
+                                    <td>454</td>
+                                    <td>407</td>
+                                    <td class="today-cell">470</td>
+                                    <td>0</td>
+                                    <td>0</td>
+                                </tr>
+                                <tr>
+                                    <th>NIGHT</th>
+                                    <td>447</td>
+                                    <td>430</td>
+                                    <td>442</td>
+                                    <td class="today-cell">156</td>
+                                    <td>0</td>
+                                    <td>0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- NIGHT SHIFT -->
+                <aside class="staff-area">
+                    <h2>NIGHT SHIFT</h2>
+                    <div class="staff-grid" id="nightStaff"></div>
+                </aside>
+            </div>
+        </section>
+
+        <!-- =========================
+             TODAY'S PRODUCTION
+        ========================== -->
+        <section class="panel production-panel">
+            <div class="section-heading">
+                <div>
+                    <span class="section-title">TODAY'S PRODUCTION</span>
+                    <span class="section-title-ja">本日の生産状況</span>
+                </div>
+            </div>
+
+            <div class="production-content">
+                <!-- LEFT KPI -->
+                <div class="kpi-column">
+                    <div class="kpi-block">
+                        <div class="mini-title">経過時間生産数</div>
+                        <table class="kpi-table">
+                            <thead>
+                                <tr>
+                                    <th>実 績</th>
+                                    <th>目 標</th>
+                                    <th>達成率</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td id="actualToday">12,535</td>
+                                    <td id="targetToday">13,500</td>
+                                    <td id="achievementToday">83%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="kpi-block">
+                        <div class="mini-title">累積生産数</div>
+                        <table class="kpi-table">
+                            <thead>
+                                <tr>
+                                    <th>実 績</th>
+                                    <th>目 標</th>
+                                    <th>達成率</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td id="actualTotal">12,535</td>
+                                    <td class="outlined-value" id="targetTotal">300,000</td>
+                                    <td id="achievementTotal">5%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CENTER CHART -->
+                <div class="production-main">
+                    <div class="elapsed-time production-elapsed">
+                        ELAPSED TIME = <span id="elapsedTimeBottom">3:45</span>
+                    </div>
+
+                    <div class="progress-axis">
+                        <span>0%</span>
+                        <span>25%</span>
+                        <span>50%</span>
+                        <span>75%</span>
+                        <span>100%</span>
+                        <span>125%</span>
+                    </div>
+
+                    <div class="progress-wrap">
+                        <div class="progress-grid-line line-25"></div>
+                        <div class="progress-grid-line line-50"></div>
+                        <div class="progress-grid-line line-75"></div>
+                        <div class="progress-grid-line line-100"></div>
+                        <div class="production-progress" id="productionProgress"></div>
+                    </div>
+
+                    <div class="mini-title machine-title">機械別生産数</div>
+                    <div class="machine-grid" id="machineGrid"></div>
+                </div>
+
+                <!-- CHARACTER / MESSAGE -->
+                <aside class="mascot-area">
+                    <div class="speech-bubble">👍 Good<br>Job!</div>
+                    <div class="mascot">
+                        <div class="mascot-head">⚙</div>
+                        <div class="mascot-body">FACTORY<br>BOT</div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
