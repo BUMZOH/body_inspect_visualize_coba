@@ -76,6 +76,9 @@
         "phi14_depth_ngcount1": "EM10124",
         "phi14_depth_ngcount2": "EM10224",
 
+        "bottom_thickness_ngcount1": "EM10126",
+        "bottom_thickness_ngcount2": "EM10226",
+
         "ngcount_total1": "EM10102",
         "ngcount_total2": "EM10202"
     },

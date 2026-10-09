@@ -291,6 +291,18 @@
         "required": false
     },
 
+    "bottom_thickness_ngcount1": {
+        "type": "INTEGER",
+        "japanese": "4STボトム厚NG1",
+        "required": false
+    },
+
+    "bottom_thickness_ngcount2": {
+        "type": "INTEGER",
+        "japanese": "4STボトム厚NG2",
+        "required": false
+    },
+
     "st1_alarm_count": {
         "type": "INTEGER",
         "japanese": "ST1アラーム数",
