@@ -243,6 +243,18 @@
         "required": false
     },
 
+    "bottom_thickness_ngcount1": {
+        "type": "INTEGER",
+        "japanese": "4STボトム厚NG1",
+        "required": false
+    },
+
+    "bottom_thickness_ngcount2": {
+        "type": "INTEGER",
+        "japanese": "4STボトム厚NG2",
+        "required": false
+    },
+
     "side_visual1_ngcount1": {
         "type": "INTEGER",
         "japanese": "側面外観1NG1",
@@ -288,18 +300,6 @@
     "phi14_depth_ngcount2": {
         "type": "INTEGER",
         "japanese": "φ1.4深さNG2",
-        "required": false
-    },
-
-    "bottom_thickness_ngcount1": {
-        "type": "INTEGER",
-        "japanese": "4STボトム厚NG1",
-        "required": false
-    },
-
-    "bottom_thickness_ngcount2": {
-        "type": "INTEGER",
-        "japanese": "4STボトム厚NG2",
         "required": false
     },
 

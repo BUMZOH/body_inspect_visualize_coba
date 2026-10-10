@@ -73,6 +73,9 @@ def init_db():
         thickness_ngcount1 INTEGER,
         thickness_ngcount2 INTEGER,
 
+        bottom_thickness_ngcount1 INTEGER,
+        bottom_thickness_ngcount2 INTEGER,
+
         side_visual1_ngcount1 INTEGER,
         side_visual1_ngcount2 INTEGER,
 
@@ -261,6 +264,9 @@ if __name__ == "__main__":
 
         "bottom_ngcount1": 0,
         "bottom_ngcount2": 0,
+
+        "bottom_thickness_ngcount1": 0,
+        "bottom_thickness_ngcount2": 0,
 
         "thickness_ngcount1": 0,
         "thickness_ngcount2": 0,
