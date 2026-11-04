@@ -65,16 +65,16 @@ machine_counts = [("No.412", 3457), ("No.413", 3123), ("No.416", 2544), ("No.421
 # ================================================
 # Tkinter root and main widgets
 root = None
-main = None
-center = None
-result_button = None
-day_group = None
-night_group = None
+frm_main = None
+frm_center = None
+btn_result = None
+frm_day_group = None
+frm_night_group = None
 
 # Ratio bars
 results_visible = False
-ratio_canvases = []
-ratio_title_labels = []
+cvs_ratios = []
+lbl_ratio_titles = []
 ratio_specs = [
     ("【直近1時間】（18：00〜19：00）", recent_this_week, recent_last_week),
     ("【全経過時間】（8：00〜19：00）", total_this_week, total_last_week),
@@ -84,8 +84,8 @@ ratio_targets = [a / (a + b) if a + b else 0.5 for _, a, b in ratio_specs]
 result_photo_modes = ("normal", "normal")  # (day, night)
 
 # Weekly production and robot animation
-weekly_cells = []
-bot_label = None
+lbl_weekly_cells = []
+lbl_bot = None
 bot_frames = []
 
 # Staff settings (loaded in main)
@@ -211,7 +211,7 @@ def load_photo(path, size=(105, 118)):
     return ImageTk.PhotoImage(canvas)
 
 def create_staff_group(parent, title, title_color, shift):
-    box = tk.Frame(
+    frm_staff = tk.Frame(
         parent,
         bg=PANEL,
         highlightbackground=LINE,
@@ -220,25 +220,25 @@ def create_staff_group(parent, title, title_color, shift):
 
     # Frameインスタンスにcombos属性を動的に追加
     # 各Comboboxを登録し、アプリ終了時の設定保存に使用する
-    box.combos = []
-    box.photos = []
+    frm_staff.combos = []
+    frm_staff.photos = []
 
-    label(box, title, 18, True, title_color).pack(pady=(0, 8))
+    label(frm_staff, title, 18, True, title_color).pack(pady=(0, 8))
 
-    grid = tk.Frame(box, bg=PANEL)
-    grid.pack(padx=7, pady=(0, 7))
+    frm_grid = tk.Frame(frm_staff, bg=PANEL)
+    frm_grid.pack(padx=7, pady=(0, 7))
 
     for i in range(6):
-        card = tk.Frame(
-            grid,
+        frm_card = tk.Frame(
+            frm_grid,
             width=112,
             height=154,
             bg=PANEL,
             highlightbackground=LINE,
             highlightthickness=1,
         )
-        card.grid(row=i // 3, column=i % 3)
-        card.grid_propagate(False)
+        frm_card.grid(row=i // 3, column=i % 3)
+        frm_card.grid_propagate(False)
 
         # Find the staff member assigned to this position
         staff_name = STAFF_INFO[shift][i]
@@ -251,38 +251,38 @@ def create_staff_group(parent, title, title_color, shift):
         # Display photo
         photo = load_photo(photo_path) if photo_path else None
 
-        pic = tk.Label(card, bg="white")
+        lbl_photo = tk.Label(frm_card, bg="white")
 
         if photo:
-            pic.configure(image=photo)
-            pic.image = photo
+            lbl_photo.configure(image=photo)
+            lbl_photo.image = photo
         else:
-            pic.configure(text="PHOTO")
+            lbl_photo.configure(text="PHOTO")
 
-        pic.pack(fill="both", expand=True)
+        lbl_photo.pack(fill="both", expand=True)
 
         # Staff selection
-        combo = ttk.Combobox(
-            card,
+        cmb_staff = ttk.Combobox(
+            frm_card,
             values=STAFF_NAMES,
             state="readonly",
             style="Staff.TCombobox",
             justify="center",
         )
-        combo.set(staff_name)
-        combo.pack(fill="x")
+        cmb_staff.set(staff_name)
+        cmb_staff.pack(fill="x")
 
-        box.combos.append(combo)
-        box.photos.append(pic)
+        frm_staff.combos.append(cmb_staff)
+        frm_staff.photos.append(lbl_photo)
 
-        # デフォルト引数(pic=pic)の役割に注意する
-        def change_staff(event, pic=pic):
-            combo = event.widget
-            name = combo.get()
+        # デフォルト引数(lbl_photo=lbl_photo)の役割に注意する
+        def change_staff(event, lbl_photo=lbl_photo):
+            cmb_staff = event.widget
+            name = cmb_staff.get()
 
             if name == "NAME":
-                pic.configure(image="", text="PHOTO")
-                pic.image = None
+                lbl_photo.configure(image="", text="PHOTO")
+                lbl_photo.image = None
                 return
 
             base_name = STAFF_INFO["staff"][name]
@@ -290,23 +290,23 @@ def create_staff_group(parent, title, title_color, shift):
             new_photo = load_photo(photo_path)
 
             if new_photo:
-                pic.configure(image=new_photo, text="")
-                pic.image = new_photo
+                lbl_photo.configure(image=new_photo, text="")
+                lbl_photo.image = new_photo
             else:
-                pic.configure(image="", text="PHOTO")
-                pic.image = None
+                lbl_photo.configure(image="", text="PHOTO")
+                lbl_photo.image = None
 
-        combo.bind("<<ComboboxSelected>>", change_staff)
+        cmb_staff.bind("<<ComboboxSelected>>", change_staff)
 
-    return box
+    return frm_staff
 
-def update_staff_photos(group, mode):
+def update_staff_photos(frm_group, mode):
     """選択中のメンバーを変えずに、写真の表情だけを更新する。"""
-    for combo, pic in zip(group.combos, group.photos):
-        name = combo.get()
+    for cmb_staff, lbl_photo in zip(frm_group.combos, frm_group.photos):
+        name = cmb_staff.get()
         if name == "NAME":
-            pic.configure(image="", text="PHOTO")
-            pic.image = None
+            lbl_photo.configure(image="", text="PHOTO")
+            lbl_photo.image = None
             continue
 
         base_name = STAFF_INFO["staff"][name]
@@ -314,32 +314,32 @@ def update_staff_photos(group, mode):
         photo = load_photo(photo_path)
 
         if photo:
-            pic.configure(image=photo, text="")
-            pic.image = photo
+            lbl_photo.configure(image=photo, text="")
+            lbl_photo.image = photo
         else:
-            pic.configure(image="", text="PHOTO")
-            pic.image = None
+            lbl_photo.configure(image="", text="PHOTO")
+            lbl_photo.image = None
 
 
 def create_table_cell(parent, text, row, col, bg="white", fg="#111111", size=15, width=10, bold=True):
-    w = tk.Label(parent, text=text, bg=bg, fg=fg, font=(FONT, size, "bold" if bold else "normal"),
+    lbl_cell = tk.Label(parent, text=text, bg=bg, fg=fg, font=(FONT, size, "bold" if bold else "normal"),
                  relief="solid", borderwidth=1, width=width, pady=7)
-    w.grid(row=row, column=col, sticky="nsew")
-    return w
+    lbl_cell.grid(row=row, column=col, sticky="nsew")
+    return lbl_cell
 
 def create_kpi_table(parent, title_text, actual, target, status):
-    block = tk.Frame(parent, bg=PANEL)
-    label(block, title_text, 18, True).pack(anchor="w", pady=(0, 6))
-    table = tk.Frame(block, bg=PANEL)
-    table.pack(fill="x")
+    frm_block = tk.Frame(parent, bg=PANEL)
+    label(frm_block, title_text, 18, True).pack(anchor="w", pady=(0, 6))
+    frm_table = tk.Frame(frm_block, bg=PANEL)
+    frm_table.pack(fill="x")
     for c, h in enumerate(["実 績", "目 標", "達成率", "進捗"]):
-        create_table_cell(table, h, 0, c, HEADER, "white", 14, 9)
+        create_table_cell(frm_table, h, 0, c, HEADER, "white", 14, 9)
     rate = round(actual / target * 100) if target else 0
     vals = [f"{actual:,}", f"{target:,}", f"{rate}%", status]
     for c, v in enumerate(vals):
-        create_table_cell(table, v, 1, c, "white", "#111111", 14, 9)
-        table.grid_columnconfigure(c, weight=1)
-    return block
+        create_table_cell(frm_table, v, 1, c, "white", "#111111", 14, 9)
+        frm_table.grid_columnconfigure(c, weight=1)
+    return frm_block
 
 # endregion
 
@@ -351,23 +351,23 @@ def draw_ratio_bar(index, show_percentage=False):
     if not results_visible:
         return
 
-    canvas = ratio_canvases[index]
-    canvas.delete("all")
+    cvs_ratio = cvs_ratios[index]
+    cvs_ratio.delete("all")
 
-    w, h = canvas.winfo_width(), canvas.winfo_height()
+    w, h = cvs_ratio.winfo_width(), cvs_ratio.winfo_height()
     if w <= 1:
         return
 
     split = w * animated_ratios[index]
 
-    canvas.create_rectangle(0, 0, split, h, fill=DAY, outline="")
-    canvas.create_rectangle(split, 0, w, h, fill=NIGHT, outline="")
+    cvs_ratio.create_rectangle(0, 0, split, h, fill=DAY, outline="")
+    cvs_ratio.create_rectangle(split, 0, w, h, fill=NIGHT, outline="")
 
     # アニメーション終了後だけパーセントを表示
     if show_percentage:
         _, left, right = ratio_specs[index]
 
-        canvas.create_text(
+        cvs_ratio.create_text(
             24, h / 2,
             text=f"{left} %",
             anchor="w",
@@ -375,7 +375,7 @@ def draw_ratio_bar(index, show_percentage=False):
             font=(FONT, 21, "bold"),
         )
 
-        canvas.create_text(
+        cvs_ratio.create_text(
             w - 24, h / 2,
             text=f"{right} %",
             anchor="e",
@@ -391,8 +391,8 @@ def animate_ratio_bars(step=0):
             animated_ratios[i] = ratio_targets[i]
             draw_ratio_bar(i, show_percentage=True)
 
-        update_staff_photos(day_group, result_photo_modes[0])
-        update_staff_photos(night_group, result_photo_modes[1])
+        update_staff_photos(frm_day_group, result_photo_modes[0])
+        update_staff_photos(frm_night_group, result_photo_modes[1])
 
         # 結果発表音
         winsound.PlaySound(
@@ -422,26 +422,26 @@ def animate_ratio_bars(step=0):
 
 def update_weekly_table(base_datetime):
     day_counts, night_counts = get_weekly_production(base_datetime)
-    weekday = base_datetime.weekday()
+    weekday = (base_datetime - timedelta(hours=8)).weekday()
 
     for row, counts in enumerate([day_counts, night_counts]):
         for col, count in enumerate(counts):
             is_today = col == weekday
 
-            weekly_cells[row][col].configure(
+            lbl_weekly_cells[row][col].configure(
                 text=f"{count:,}",
                 bg=ACCENT if is_today else "white",
                 fg="white" if is_today else "#111111",
             )
 
 def create_header():
-    global result_button, button_style
+    global btn_result, button_style
 
-    head = tk.Frame(main, bg=BG)
-    head.grid(row=0, column=0, sticky="ew", pady=(0, 6))
+    frm_header = tk.Frame(frm_main, bg=BG)
+    frm_header.grid(row=0, column=0, sticky="ew", pady=(0, 6))
     # 0列目だけが余った横幅を受け取る設定(ボタンが右寄せになる)
-    head.grid_columnconfigure(0, weight=1)
-    label(head, "稼働率勝負", 28, True, bg=BG).grid(row=0, column=0, sticky="w")
+    frm_header.grid_columnconfigure(0, weight=1)
+    label(frm_header, "可動率勝負", 28, True, bg=BG).grid(row=0, column=0, sticky="w")
     button_style = dict(
         font=(FONT, 15),
         bg="#f0f0f0",
@@ -454,141 +454,141 @@ def create_header():
         pady=7,
     )
     # 以下"**"は辞書展開 → 辞書の内容をキーワード引数として渡す
-    result_button = tk.Button(head, text="結果表示", **button_style)
-    result_button.grid(row=0, column=1, padx=5)
-    tk.Button(head, text="メンバ入替", command=swap_staff, **button_style).grid(row=0, column=2, padx=5)
+    btn_result = tk.Button(frm_header, text="結果表示", **button_style)
+    btn_result.grid(row=0, column=1, padx=5)
+    tk.Button(frm_header, text="メンバ入替", command=swap_staff, **button_style).grid(row=0, column=2, padx=5)
 
 def create_ratio_section():
-    global ratio_title_labels
+    global lbl_ratio_titles
 
-    ratio_title_labels = []
+    lbl_ratio_titles = []
 
     for i, (title, _, _) in enumerate(ratio_specs):
-        title_label = label(center, "", 19, True)
-        title_label.pack(pady=(0 if i == 0 else 18, 4))
-        ratio_title_labels.append(title_label)
+        lbl_title = label(frm_center, "", 19, True)
+        lbl_title.pack(pady=(0 if i == 0 else 18, 4))
+        lbl_ratio_titles.append(lbl_title)
 
-        row = tk.Frame(center, bg=PANEL)
-        row.pack(fill="x")
-        label(row, "今週", 17, True).pack(side="left", padx=(0, 10))
-        c = tk.Canvas(row, height=68, bg="white", highlightbackground="#222222", highlightthickness=2)
-        c.pack(side="left", fill="x", expand=True)
-        label(row, "先週", 17, True).pack(side="left", padx=(10, 0))
-        ratio_canvases.append(c)
-        c.bind("<Configure>", lambda e, idx=i: draw_ratio_bar(idx))
+        frm_row = tk.Frame(frm_center, bg=PANEL)
+        frm_row.pack(fill="x")
+        label(frm_row, "今週", 17, True).pack(side="left", padx=(0, 10))
+        cvs_ratio = tk.Canvas(frm_row, height=68, bg="white", highlightbackground="#222222", highlightthickness=2)
+        cvs_ratio.pack(side="left", fill="x", expand=True)
+        label(frm_row, "先週", 17, True).pack(side="left", padx=(10, 0))
+        cvs_ratios.append(cvs_ratio)
+        cvs_ratio.bind("<Configure>", lambda e, idx=i: draw_ratio_bar(idx))
 
 def create_weekly_table():
-    global weekly_cells
+    global lbl_weekly_cells
 
     # Weekly inspection table
-    label(center, "週間検査数", 17, True).pack(anchor="w", pady=(10, 0))
+    label(frm_center, "週間検査数", 17, True).pack(anchor="w", pady=(10, 0))
 
-    weekly = tk.Frame(center, bg=PANEL)
-    weekly.pack(fill="x")
+    frm_weekly = tk.Frame(frm_center, bg=PANEL)
+    frm_weekly.pack(fill="x")
 
     headers = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    weekly_cells = []
+    lbl_weekly_cells = []
 
     for c, h in enumerate(headers):
         create_table_cell(
-            weekly, h, 0, c,
+            frm_weekly, h, 0, c,
             "white" if c == 0 else HEADER,
             "white" if c else TEXT, 14, 9,
         )
 
     for r, shift in enumerate(["昼 勤", "夜 勤"], start=1):
-        create_table_cell(weekly, shift, r, 0, HEADER, "white", 14, 9)
+        create_table_cell(frm_weekly, shift, r, 0, HEADER, "white", 14, 9)
 
         row_cells = []
         for c in range(1, 7):
-            cell = create_table_cell(
-                weekly, "0", r, c, "white", "#111111", 14, 9,
+            lbl_cell = create_table_cell(
+                frm_weekly, "0", r, c, "white", "#111111", 14, 9,
             )
-            row_cells.append(cell)
+            row_cells.append(lbl_cell)
 
-        weekly_cells.append(row_cells)
+        lbl_weekly_cells.append(row_cells)
 
     for c in range(7):
-        weekly.grid_columnconfigure(c, weight=1)
+        frm_weekly.grid_columnconfigure(c, weight=1)
 
 def create_top_panel():
-    global day_group, night_group, center
+    global frm_day_group, frm_night_group, frm_center
 
-    top = tk.Frame(main, bg=PANEL, highlightbackground=LINE, highlightthickness=4)
-    top.grid(row=1, column=0, sticky="nsew")
-    top.grid_columnconfigure(0, minsize=350)
-    top.grid_columnconfigure(1, weight=1)   # 中央の列に、余った横幅を割り当てる
-    top.grid_columnconfigure(2, minsize=350)
-    top.grid_rowconfigure(0, weight=1)
+    frm_top = tk.Frame(frm_main, bg=PANEL, highlightbackground=LINE, highlightthickness=4)
+    frm_top.grid(row=1, column=0, sticky="nsew")
+    frm_top.grid_columnconfigure(0, minsize=350)
+    frm_top.grid_columnconfigure(1, weight=1)   # 中央の列に、余った横幅を割り当てる
+    frm_top.grid_columnconfigure(2, minsize=350)
+    frm_top.grid_rowconfigure(0, weight=1)
 
-    day_group = create_staff_group(top, "昼勤メンバー", "#f0782b", "day")
-    day_group.grid(row=0, column=0, padx=15, pady=28, sticky="nsew")
+    frm_day_group = create_staff_group(frm_top, "昼勤メンバー", "#f0782b", "day")
+    frm_day_group.grid(row=0, column=0, padx=15, pady=28, sticky="nsew")
 
-    night_group = create_staff_group(top, "夜勤メンバー", "#356bb3", "night")
-    night_group.grid(row=0, column=2, padx=15, pady=28, sticky="nsew")
+    frm_night_group = create_staff_group(frm_top, "夜勤メンバー", "#356bb3", "night")
+    frm_night_group.grid(row=0, column=2, padx=15, pady=28, sticky="nsew")
 
-    center = tk.Frame(top, bg=PANEL)
-    center.grid(row=0, column=1, sticky="nsew", padx=20, pady=12)
+    frm_center = tk.Frame(frm_top, bg=PANEL)
+    frm_center.grid(row=0, column=1, sticky="nsew", padx=20, pady=12)
 
     create_ratio_section()
     create_weekly_table()
 
 def create_bottom_panel():
-    bottom = tk.Frame(main, bg=PANEL, highlightbackground=LINE, highlightthickness=4)
-    bottom.grid(row=3, column=0, sticky="nsew")
-    bottom.grid_columnconfigure(0, minsize=520)
-    bottom.grid_columnconfigure(1, weight=1)
-    bottom.grid_columnconfigure(2, minsize=330)
-    bottom.grid_rowconfigure(0, weight=1)
+    frm_bottom = tk.Frame(frm_main, bg=PANEL, highlightbackground=LINE, highlightthickness=4)
+    frm_bottom.grid(row=3, column=0, sticky="nsew")
+    frm_bottom.grid_columnconfigure(0, minsize=520)
+    frm_bottom.grid_columnconfigure(1, weight=1)
+    frm_bottom.grid_columnconfigure(2, minsize=330)
+    frm_bottom.grid_rowconfigure(0, weight=1)
 
-    left = tk.Frame(bottom, bg=PANEL)
-    left.grid(row=0, column=0, sticky="nsew", padx=14, pady=10)
-    create_kpi_table(left, "直近1時間（18：00〜19：00）", actual_recent, target_recent, "順調").pack(fill="x")
-    create_kpi_table(left, "累積生産数（8：00〜19：00）", actual_total, target_total, "超順調").pack(fill="x", pady=(8, 20))
-    control = tk.Frame(left, bg=PANEL)
-    control.pack(fill="x", pady=(12, 0))
+    frm_left = tk.Frame(frm_bottom, bg=PANEL)
+    frm_left.grid(row=0, column=0, sticky="nsew", padx=14, pady=10)
+    create_kpi_table(frm_left, "直近1時間（18：00〜19：00）", actual_recent, target_recent, "順調").pack(fill="x")
+    create_kpi_table(frm_left, "累積生産数（8：00〜19：00）", actual_total, target_total, "超順調").pack(fill="x", pady=(8, 20))
+    frm_control = tk.Frame(frm_left, bg=PANEL)
+    frm_control.pack(fill="x", pady=(12, 0))
     tk.Button(
-        control,
+        frm_control,
         text="目標入力",
         **button_style,
     ).grid(row=0, column=0, padx=(10, 18), sticky="w")
 
-    create_table_cell(control, "目標生産数", 0, 1, "white", "#111111", 15, 11)
-    create_table_cell(control, "300000", 0, 2, "white", "#111111", 15, 11)
+    create_table_cell(frm_control, "目標生産数", 0, 1, "white", "#111111", 15, 11)
+    create_table_cell(frm_control, "300000", 0, 2, "white", "#111111", 15, 11)
 
-    mid = tk.Frame(bottom, bg=PANEL)
-    mid.grid(row=0, column=1, sticky="nsew", padx=14, pady=10)
+    frm_middle = tk.Frame(frm_bottom, bg=PANEL)
+    frm_middle.grid(row=0, column=1, sticky="nsew", padx=14, pady=10)
 
-    create_progress_section(mid)
-    label(mid, "号機別生産数", 18, True).pack(anchor="w", pady=(0, 2))
-    machine = tk.Frame(mid, bg=PANEL)
-    machine.pack(fill="x")
+    create_progress_section(frm_middle)
+    label(frm_middle, "号機別生産数", 18, True).pack(anchor="w", pady=(0, 2))
+    frm_machine = tk.Frame(frm_middle, bg=PANEL)
+    frm_machine.pack(fill="x")
     for c, (name, count) in enumerate(machine_counts):
-        create_table_cell(machine, name, 0, c, HEADER, "white", 13, 9)
-        create_table_cell(machine, f"{count:,}", 1, c, "white", "#111111", 14, 9)
-        machine.grid_columnconfigure(c, weight=1)
+        create_table_cell(frm_machine, name, 0, c, HEADER, "white", 13, 9)
+        create_table_cell(frm_machine, f"{count:,}", 1, c, "white", "#111111", 14, 9)
+        frm_machine.grid_columnconfigure(c, weight=1)
 
-    create_bot_section(bottom)
+    create_bot_section(frm_bottom)
 
-def create_progress_section(mid):
+def create_progress_section(frm_middle):
     def make_progress(title_text, value, display_max=125):
         """Draw progress using a common 0-125% scale.
 
         display_max controls where the graph ends.  The scale itself always uses
         125%, so the 100% position is identical in both graphs.
         """
-        label(mid, title_text, 16, True).pack(anchor="w")
+        label(frm_middle, title_text, 16, True).pack(anchor="w")
 
         # Both graphs use the same 125% scale.
         # A 100% graph therefore occupies 100 / 125 = 80% of the full width.
         width_ratio = display_max / 125
 
-        progress_area = tk.Frame(mid, bg=PANEL, height=92)
-        progress_area.pack(fill="x", pady=(0, 10))
-        progress_area.pack_propagate(False)
+        frm_progress = tk.Frame(frm_middle, bg=PANEL, height=92)
+        frm_progress.pack(fill="x", pady=(0, 10))
+        frm_progress.pack_propagate(False)
 
-        axis = tk.Frame(progress_area, bg=PANEL)
-        axis.place(relx=0, rely=0, relwidth=width_ratio, height=25)
+        frm_axis = tk.Frame(frm_progress, bg=PANEL)
+        frm_axis.place(relx=0, rely=0, relwidth=width_ratio, height=25)
 
         percentages = list(range(0, display_max + 1, 25))
 
@@ -603,27 +603,27 @@ def create_progress_section(mid):
             else:
                 anchor = "center"
 
-            label(axis, f"{p}%", 13, True).place(
+            label(frm_axis, f"{p}%", 13, True).place(
                 relx=p / display_max,
                 rely=0.5,
                 anchor=anchor,
             )
 
-        cv = tk.Canvas(
-            progress_area,
+        cvs_progress = tk.Canvas(
+            frm_progress,
             bg="white",
             highlightbackground="#555555",
             highlightthickness=3,
         )
-        cv.place(relx=0, y=25, relwidth=width_ratio, height=64)
+        cvs_progress.place(relx=0, y=25, relwidth=width_ratio, height=64)
 
         def draw(e=None):
-            cv.delete("all")
-            w, h = cv.winfo_width(), cv.winfo_height()
+            cvs_progress.delete("all")
+            w, h = cvs_progress.winfo_width(), cvs_progress.winfo_height()
 
             # The canvas width represents display_max, so values over display_max
             # are shown as a full bar.
-            cv.create_rectangle(
+            cvs_progress.create_rectangle(
                 0, 0,
                 w * min(value / display_max, 1), h,
                 fill=PROGRESS,
@@ -632,25 +632,25 @@ def create_progress_section(mid):
 
             for p in percentages[1:]:
                 x = w * p / display_max
-                cv.create_line(
+                cvs_progress.create_line(
                     x, 0, x, h,
                     fill="#666666",
                     width=3,
                     dash=() if p == display_max else (8, 5),
                 )
 
-        cv.bind("<Configure>", draw)
+        cvs_progress.bind("<Configure>", draw)
 
     make_progress("直近1時間（18：00〜19：00）", 113, display_max=125)
     make_progress("累積生産数（8：00〜19：00）", 105, display_max=100)
 
-def create_bot_section(bottom):
-    global bot_label, bot_frames
+def create_bot_section(frm_bottom):
+    global lbl_bot, bot_frames
 
-    bot_area = tk.Frame(bottom, bg=PANEL)
-    bot_area.grid(row=0, column=2, sticky="nsew", padx=18, pady=10)
-    bot_label = tk.Label(bot_area, bg=PANEL)
-    bot_label.pack(expand=True)
+    frm_bot = tk.Frame(frm_bottom, bg=PANEL)
+    frm_bot.grid(row=0, column=2, sticky="nsew", padx=18, pady=10)
+    lbl_bot = tk.Label(frm_bot, bg=PANEL)
+    lbl_bot.pack(expand=True)
     bot_frames = []
 
     if Image is not None and BOT_GIF.exists():
@@ -664,9 +664,9 @@ def create_bot_section(bottom):
 
 def animate_bot(index=0):
     if not bot_frames:
-        bot_label.configure(text="ANIMATION GIF\nimage/factory_bot.gif", fg=TEXT, font=(FONT, 18, "bold"))
+        lbl_bot.configure(text="ANIMATION GIF\nimage/factory_bot.gif", fg=TEXT, font=(FONT, 18, "bold"))
         return
-    bot_label.configure(image=bot_frames[index])
+    lbl_bot.configure(image=bot_frames[index])
     root.after(100, animate_bot, (index + 1) % len(bot_frames))
 
 # endregion
@@ -681,7 +681,7 @@ def toggle_fullscreen(event=None):
     root.attributes("-fullscreen", not is_fullscreen)
 
 def swap_staff():
-    for day_combo, night_combo in zip(day_group.combos, night_group.combos):
+    for day_combo, night_combo in zip(frm_day_group.combos, frm_night_group.combos):
         day_name = day_combo.get()
         night_name = night_combo.get()
 
@@ -693,11 +693,11 @@ def swap_staff():
 
 def save_staff_info():
     STAFF_INFO["day"] = [
-        combo.get() for combo in day_group.combos
+        combo.get() for combo in frm_day_group.combos
     ]
 
     STAFF_INFO["night"] = [
-        combo.get() for combo in night_group.combos
+        combo.get() for combo in frm_night_group.combos
     ]
 
     with open(STAFF_INFO_FILE, "w", encoding="utf-8") as file:
@@ -710,8 +710,10 @@ def on_close():
 def show_results():
     global results_visible, result_photo_modes
 
-    # 現在日時を1時間単位に切り捨てる
-    now = datetime.now().replace(minute=0, second=0, microsecond=0)
+    # 現在時刻の前の時間をデフォルト値とする
+    now = (datetime.now() - timedelta(hours=1)).replace(
+        minute=0, second=0, microsecond=0
+    )
 
     # 基準日時を入力
     date_str = simpledialog.askstring(
@@ -860,8 +862,8 @@ def show_results():
     # 両方のグラフを表示
     results_visible = True
 
-    ratio_title_labels[0].configure(text=ratio_specs[0][0])
-    ratio_title_labels[1].configure(text=ratio_specs[1][0])
+    lbl_ratio_titles[0].configure(text=ratio_specs[0][0])
+    lbl_ratio_titles[1].configure(text=ratio_specs[1][0])
 
     # ドラムロール再生
     winsound.PlaySound(
@@ -882,7 +884,7 @@ def initialize_app():
     global root
 
     root = tk.Tk()
-    root.title("稼働率勝負")
+    root.title("可動率勝負")
     root.geometry(f"{SCREEN_WIDTH}x{SCREEN_HEIGHT}")
     root.configure(bg=BG)
     root.attributes("-fullscreen", True)
@@ -896,23 +898,23 @@ def initialize_app():
     root.option_add("*TCombobox*Listbox.font", (FONT, 11))
 
 def create_main_layout():
-    global main
+    global frm_main
 
-    main = tk.Frame(root, bg=BG)
-    main.pack(fill="both", expand=True, padx=15, pady=12)
-    main.grid_columnconfigure(0, weight=1)
-    main.grid_rowconfigure(1, weight=50)    # 1行目=上段パネル(可動率勝負)
-    main.grid_rowconfigure(3, weight=50)    # 3行目=下段パネル(生産数表示)
+    frm_main = tk.Frame(root, bg=BG)
+    frm_main.pack(fill="both", expand=True, padx=15, pady=12)
+    frm_main.grid_columnconfigure(0, weight=1)
+    frm_main.grid_rowconfigure(1, weight=50)    # 1行目=上段パネル(可動率勝負)
+    frm_main.grid_rowconfigure(3, weight=50)    # 3行目=下段パネル(生産数表示)
 
     create_header()
     create_top_panel()
     # separator title
-    label(main, "本日の生産状況", 26, True, bg=BG).grid(row=2, column=0, sticky="w", pady=(8, 3))
+    label(frm_main, "本日の生産状況", 26, True, bg=BG).grid(row=2, column=0, sticky="w", pady=(8, 3))
 
     create_bottom_panel()
 
 def setup_events():
-    result_button.configure(command=show_results)
+    btn_result.configure(command=show_results)
     root.bind("<F11>", toggle_fullscreen)
     root.bind("<Escape>", lambda event: root.attributes("-fullscreen", False))
     root.protocol("WM_DELETE_WINDOW", on_close)
