@@ -125,7 +125,7 @@ def create_table_cell(parent, text, row, col, bg="white", fg="#111111", size=15,
     w.grid(row=row, column=col, sticky="nsew")
     return w
 
-
+# 下段左側 生産状況テーブル作成
 def create_kpi_table(parent, title_text, actual, target, status):
     block = tk.Frame(parent, bg=PANEL)
     label(block, title_text, 18, True).pack(anchor="w", pady=(0, 6))
@@ -146,12 +146,13 @@ def create_kpi_table(parent, title_text, actual, target, status):
 main = tk.Frame(root, bg=BG)
 main.pack(fill="both", expand=True, padx=15, pady=12)
 main.grid_columnconfigure(0, weight=1)
-main.grid_rowconfigure(1, weight=50)
-main.grid_rowconfigure(3, weight=50)
+main.grid_rowconfigure(1, weight=50)    # 1行目=上段パネル(可動率勝負)
+main.grid_rowconfigure(3, weight=50)    # 3行目=下段パネル(生産数表示)
 
-# Top title row
+# 0行目 (上段パネルのタイトル)
 head = tk.Frame(main, bg=BG)
 head.grid(row=0, column=0, sticky="ew", pady=(0, 6))
+# 0列目だけが余った横幅を受け取る設定(ボタンが右寄せになる)
 head.grid_columnconfigure(0, weight=1)
 label(head, "稼働率勝負", 28, True, bg=BG).grid(row=0, column=0, sticky="w")
 button_style = dict(
@@ -165,16 +166,20 @@ button_style = dict(
     padx=28,
     pady=7,
 )
+# 以下"**"は辞書展開 → 辞書の内容をキーワード引数として渡す
 tk.Button(head, text="結果表示", **button_style).grid(row=0, column=1, padx=5)
 tk.Button(head, text="メンバ入替", **button_style).grid(row=0, column=2, padx=5)
 
 # ============================================================
-# Top panel
+# Top panel (可動率勝負表示)
+#   column=0: 昼勤メンバ表示
+#   column=1: 可動率結果表示&曜日別生産数表示
+#   column=2: 夜勤メンバ表示
 # ============================================================
 top = tk.Frame(main, bg=PANEL, highlightbackground=LINE, highlightthickness=4)
 top.grid(row=1, column=0, sticky="nsew")
 top.grid_columnconfigure(0, minsize=350)
-top.grid_columnconfigure(1, weight=1)
+top.grid_columnconfigure(1, weight=1)   # 中央の列に、余った横幅を割り当てる
 top.grid_columnconfigure(2, minsize=350)
 top.grid_rowconfigure(0, weight=1)
 
@@ -185,7 +190,7 @@ night_group.grid(row=0, column=2, padx=15, pady=28, sticky="nsew")
 
 center = tk.Frame(top, bg=PANEL)
 center.grid(row=0, column=1, sticky="nsew", padx=20, pady=12)
-center.grid_columnconfigure(0, weight=1)
+# center.grid_columnconfigure(0, weight=1)
 
 # Animated ratio bars
 ratio_canvases = []

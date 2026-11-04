@@ -1,0 +1,937 @@
+import json
+import math
+import sqlite3
+import tkinter as tk
+import winsound
+from tkinter import ttk, simpledialog, messagebox
+from datetime import datetime, timedelta
+from pathlib import Path
+
+try:
+    from PIL import Image, ImageTk, ImageSequence
+except ImportError:
+    Image = ImageTk = ImageSequence = None
+
+# ================================================
+# region Settings
+# ================================================
+BASE_DIR = Path(__file__).resolve().parent
+DB_FILE = BASE_DIR / "data" / "body_inspection_machine.db"
+IMAGE_DIR = BASE_DIR / "image"
+BOT_GIF = IMAGE_DIR / "factory_bot.gif"
+
+STAFF_PHOTO_DIR = BASE_DIR / "staff_photo"
+STAFF_INFO_FILE = BASE_DIR / "staff_shift_info.json"
+
+SOUND_DIR = BASE_DIR / "sound"
+DRUM_SOUND = SOUND_DIR / "drum_roll.wav"
+BANG_SOUND = SOUND_DIR / "result_bang.wav"
+
+SCREEN_WIDTH = 1920
+SCREEN_HEIGHT = 1080
+BG = "#f7f7f7"
+PANEL = "#ffffff"
+TEXT = "#5b5b5b"
+LINE = "#9b9b9b"
+HEADER = "#aaaaaa"
+DAY = "#c89a00"
+NIGHT = "#ffc928"
+PROGRESS = "#a9bfe4"
+ACCENT = "#ff5959"
+
+# FONT = "Yu Gothic"
+FONT = "UD デジタル 教科書体 NP"
+
+# endregion
+
+# ================================================
+# region Sample Data (bottom panel)
+# ================================================
+# Sample values shown in the reference layout
+recent_this_week = 60
+recent_last_week = 40
+total_this_week = 52
+total_last_week = 48
+actual_recent = 13535
+target_recent = 13500
+actual_total = 155000
+target_total = 150000
+machine_counts = [("No.412", 3457), ("No.413", 3123), ("No.416", 2544), ("No.421", 957), ("No.428", 2884)]
+
+# endregion
+
+# ================================================
+# region Global Variables
+# ================================================
+# Tkinter root and main widgets
+root = None
+main = None
+center = None
+result_button = None
+day_group = None
+night_group = None
+
+# Ratio bars
+results_visible = False
+ratio_canvases = []
+ratio_title_labels = []
+ratio_specs = [
+    ("【直近1時間】（18：00〜19：00）", recent_this_week, recent_last_week),
+    ("【全経過時間】（8：00〜19：00）", total_this_week, total_last_week),
+]
+animated_ratios = [0.5, 0.5]
+ratio_targets = [a / (a + b) if a + b else 0.5 for _, a, b in ratio_specs]
+result_photo_modes = ("normal", "normal")  # (day, night)
+
+# Weekly production and robot animation
+weekly_cells = []
+bot_label = None
+bot_frames = []
+
+# Staff settings (loaded in main)
+STAFF_INFO = {}
+STAFF_NAMES = []
+# endregion
+
+# ================================================
+# region Database Functions
+# ================================================
+
+def get_previous_week_datetime(base_datetime):
+    return base_datetime - timedelta(days=7)
+
+def get_shift_start_datetime(base_datetime):
+    hour = base_datetime.hour
+
+    if 8 <= hour <= 19:
+        return base_datetime.replace(hour=8)
+
+    if hour >= 20:
+        return base_datetime.replace(hour=20)
+
+    return (base_datetime - timedelta(days=1)).replace(hour=20)
+
+def get_operating_time(target_datetime):
+    date_hour = target_datetime.strftime("%Y-%m-%d %H:%M")
+
+    with sqlite3.connect(DB_FILE) as conn:
+        total_sec = conn.execute(
+            """
+            SELECT COALESCE(SUM(operating_time_sec), 0)
+            FROM production_result
+            WHERE date_hour = ?
+            """,
+            (date_hour,),
+        ).fetchone()[0]
+
+    return total_sec
+
+def get_cumulative_operating_time(start_datetime, end_datetime):
+    start_str = start_datetime.strftime("%Y-%m-%d %H:%M")
+    end_str = end_datetime.strftime("%Y-%m-%d %H:%M")
+
+    with sqlite3.connect(DB_FILE) as conn:
+        total_sec = conn.execute(
+            """
+            SELECT COALESCE(SUM(operating_time_sec), 0)
+            FROM production_result
+            WHERE date_hour >= ? AND date_hour <= ?
+            """,
+            (start_str, end_str),
+        ).fetchone()[0]
+
+    return total_sec
+
+def get_weekly_production(base_datetime):
+    # 基準日を含む週の月曜日
+    monday = (
+        base_datetime - timedelta(days=base_datetime.weekday())
+    ).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    weekly_day = []
+    weekly_night = []
+
+    with sqlite3.connect(DB_FILE) as conn:
+        for i in range(6):
+            day = monday + timedelta(days=i)
+
+            day_start = day.replace(hour=8)
+            day_end = day.replace(hour=20)
+
+            night_start = day_end
+            night_end = day_end + timedelta(hours=12)
+
+            day_count = conn.execute(
+                """
+                SELECT COALESCE(SUM(production_num_1hour), 0)
+                FROM production_result
+                WHERE date_hour >= ? AND date_hour < ?
+                """,
+                (
+                    day_start.strftime("%Y-%m-%d %H:%M"),
+                    day_end.strftime("%Y-%m-%d %H:%M"),
+                ),
+            ).fetchone()[0]
+
+            night_count = conn.execute(
+                """
+                SELECT COALESCE(SUM(production_num_1hour), 0)
+                FROM production_result
+                WHERE date_hour >= ? AND date_hour < ?
+                """,
+                (
+                    night_start.strftime("%Y-%m-%d %H:%M"),
+                    night_end.strftime("%Y-%m-%d %H:%M"),
+                ),
+            ).fetchone()[0]
+
+            weekly_day.append(day_count)
+            weekly_night.append(night_count)
+
+    return weekly_day, weekly_night
+
+# endregion
+
+# ================================================
+# region UI Helper Functions
+# ================================================
+
+def label(parent, text="", size=16, bold=False, fg=TEXT, bg=PANEL, **kwargs):
+    return tk.Label(parent, text=text, font=(FONT, size, "bold" if bold else "normal"), fg=fg, bg=bg, **kwargs)
+
+def load_photo(path, size=(105, 118)):
+    if Image is None or not path.exists():
+        return None
+    im = Image.open(path).convert("RGB")
+    im.thumbnail(size, Image.Resampling.LANCZOS)
+    canvas = Image.new("RGB", size, "white")
+    x = (size[0] - im.width) // 2
+    y = (size[1] - im.height) // 2
+    canvas.paste(im, (x, y))
+    return ImageTk.PhotoImage(canvas)
+
+def create_staff_group(parent, title, title_color, shift):
+    box = tk.Frame(
+        parent,
+        bg=PANEL,
+        highlightbackground=LINE,
+        highlightthickness=2,
+    )
+
+    # Frameインスタンスにcombos属性を動的に追加
+    # 各Comboboxを登録し、アプリ終了時の設定保存に使用する
+    box.combos = []
+    box.photos = []
+
+    label(box, title, 18, True, title_color).pack(pady=(0, 8))
+
+    grid = tk.Frame(box, bg=PANEL)
+    grid.pack(padx=7, pady=(0, 7))
+
+    for i in range(6):
+        card = tk.Frame(
+            grid,
+            width=112,
+            height=154,
+            bg=PANEL,
+            highlightbackground=LINE,
+            highlightthickness=1,
+        )
+        card.grid(row=i // 3, column=i % 3)
+        card.grid_propagate(False)
+
+        # Find the staff member assigned to this position
+        staff_name = STAFF_INFO[shift][i]
+        photo_path = None
+
+        if staff_name != "NAME":
+            base_name = STAFF_INFO["staff"][staff_name]
+            photo_path = STAFF_PHOTO_DIR / f"{base_name}_normal.png"
+
+        # Display photo
+        photo = load_photo(photo_path) if photo_path else None
+
+        pic = tk.Label(card, bg="white")
+
+        if photo:
+            pic.configure(image=photo)
+            pic.image = photo
+        else:
+            pic.configure(text="PHOTO")
+
+        pic.pack(fill="both", expand=True)
+
+        # Staff selection
+        combo = ttk.Combobox(
+            card,
+            values=STAFF_NAMES,
+            state="readonly",
+            style="Staff.TCombobox",
+            justify="center",
+        )
+        combo.set(staff_name)
+        combo.pack(fill="x")
+
+        box.combos.append(combo)
+        box.photos.append(pic)
+
+        # デフォルト引数(pic=pic)の役割に注意する
+        def change_staff(event, pic=pic):
+            combo = event.widget
+            name = combo.get()
+
+            if name == "NAME":
+                pic.configure(image="", text="PHOTO")
+                pic.image = None
+                return
+
+            base_name = STAFF_INFO["staff"][name]
+            photo_path = STAFF_PHOTO_DIR / f"{base_name}_normal.png"
+            new_photo = load_photo(photo_path)
+
+            if new_photo:
+                pic.configure(image=new_photo, text="")
+                pic.image = new_photo
+            else:
+                pic.configure(image="", text="PHOTO")
+                pic.image = None
+
+        combo.bind("<<ComboboxSelected>>", change_staff)
+
+    return box
+
+def update_staff_photos(group, mode):
+    """選択中のメンバーを変えずに、写真の表情だけを更新する。"""
+    for combo, pic in zip(group.combos, group.photos):
+        name = combo.get()
+        if name == "NAME":
+            pic.configure(image="", text="PHOTO")
+            pic.image = None
+            continue
+
+        base_name = STAFF_INFO["staff"][name]
+        photo_path = STAFF_PHOTO_DIR / f"{base_name}_{mode}.png"
+        photo = load_photo(photo_path)
+
+        if photo:
+            pic.configure(image=photo, text="")
+            pic.image = photo
+        else:
+            pic.configure(image="", text="PHOTO")
+            pic.image = None
+
+
+def create_table_cell(parent, text, row, col, bg="white", fg="#111111", size=15, width=10, bold=True):
+    w = tk.Label(parent, text=text, bg=bg, fg=fg, font=(FONT, size, "bold" if bold else "normal"),
+                 relief="solid", borderwidth=1, width=width, pady=7)
+    w.grid(row=row, column=col, sticky="nsew")
+    return w
+
+def create_kpi_table(parent, title_text, actual, target, status):
+    block = tk.Frame(parent, bg=PANEL)
+    label(block, title_text, 18, True).pack(anchor="w", pady=(0, 6))
+    table = tk.Frame(block, bg=PANEL)
+    table.pack(fill="x")
+    for c, h in enumerate(["実 績", "目 標", "達成率", "進捗"]):
+        create_table_cell(table, h, 0, c, HEADER, "white", 14, 9)
+    rate = round(actual / target * 100) if target else 0
+    vals = [f"{actual:,}", f"{target:,}", f"{rate}%", status]
+    for c, v in enumerate(vals):
+        create_table_cell(table, v, 1, c, "white", "#111111", 14, 9)
+        table.grid_columnconfigure(c, weight=1)
+    return block
+
+# endregion
+
+# ================================================
+# region UI Functions
+# ================================================
+
+def draw_ratio_bar(index, show_percentage=False):
+    if not results_visible:
+        return
+
+    canvas = ratio_canvases[index]
+    canvas.delete("all")
+
+    w, h = canvas.winfo_width(), canvas.winfo_height()
+    if w <= 1:
+        return
+
+    split = w * animated_ratios[index]
+
+    canvas.create_rectangle(0, 0, split, h, fill=DAY, outline="")
+    canvas.create_rectangle(split, 0, w, h, fill=NIGHT, outline="")
+
+    # アニメーション終了後だけパーセントを表示
+    if show_percentage:
+        _, left, right = ratio_specs[index]
+
+        canvas.create_text(
+            24, h / 2,
+            text=f"{left} %",
+            anchor="w",
+            fill="white",
+            font=(FONT, 21, "bold"),
+        )
+
+        canvas.create_text(
+            w - 24, h / 2,
+            text=f"{right} %",
+            anchor="e",
+            fill="black",
+            font=(FONT, 21, "bold"),
+        )
+
+def animate_ratio_bars(step=0):
+    total_steps = 36
+
+    if step >= total_steps:
+        for i in range(2):
+            animated_ratios[i] = ratio_targets[i]
+            draw_ratio_bar(i, show_percentage=True)
+
+        update_staff_photos(day_group, result_photo_modes[0])
+        update_staff_photos(night_group, result_photo_modes[1])
+
+        # 結果発表音
+        winsound.PlaySound(
+            str(BANG_SOUND),
+            winsound.SND_FILENAME | winsound.SND_ASYNC,
+        )
+        return
+
+    progress = step / total_steps
+    ease = 1 - (1 - progress) ** 3
+    wobble = math.sin(step * 0.65) * 0.30 * (1 - progress ** 3)
+
+    for i in range(2):
+        target = ratio_targets[i]
+
+        animated_ratios[i] = (
+            0.5 + (target - 0.5) * ease + wobble
+        )
+
+        animated_ratios[i] = max(
+            0.02, min(0.98, animated_ratios[i])
+        )
+
+        draw_ratio_bar(i)
+
+    root.after(70, animate_ratio_bars, step + 1)
+
+def update_weekly_table(base_datetime):
+    day_counts, night_counts = get_weekly_production(base_datetime)
+    weekday = base_datetime.weekday()
+
+    for row, counts in enumerate([day_counts, night_counts]):
+        for col, count in enumerate(counts):
+            is_today = col == weekday
+
+            weekly_cells[row][col].configure(
+                text=f"{count:,}",
+                bg=ACCENT if is_today else "white",
+                fg="white" if is_today else "#111111",
+            )
+
+def create_header():
+    global result_button, button_style
+
+    head = tk.Frame(main, bg=BG)
+    head.grid(row=0, column=0, sticky="ew", pady=(0, 6))
+    # 0列目だけが余った横幅を受け取る設定(ボタンが右寄せになる)
+    head.grid_columnconfigure(0, weight=1)
+    label(head, "稼働率勝負", 28, True, bg=BG).grid(row=0, column=0, sticky="w")
+    button_style = dict(
+        font=(FONT, 15),
+        bg="#f0f0f0",
+        fg="#222222",
+        activebackground="#e5e5e5",
+        activeforeground="#222222",
+        relief="solid",
+        borderwidth=1,
+        padx=28,
+        pady=7,
+    )
+    # 以下"**"は辞書展開 → 辞書の内容をキーワード引数として渡す
+    result_button = tk.Button(head, text="結果表示", **button_style)
+    result_button.grid(row=0, column=1, padx=5)
+    tk.Button(head, text="メンバ入替", command=swap_staff, **button_style).grid(row=0, column=2, padx=5)
+
+def create_ratio_section():
+    global ratio_title_labels
+
+    ratio_title_labels = []
+
+    for i, (title, _, _) in enumerate(ratio_specs):
+        title_label = label(center, "", 19, True)
+        title_label.pack(pady=(0 if i == 0 else 18, 4))
+        ratio_title_labels.append(title_label)
+
+        row = tk.Frame(center, bg=PANEL)
+        row.pack(fill="x")
+        label(row, "今週", 17, True).pack(side="left", padx=(0, 10))
+        c = tk.Canvas(row, height=68, bg="white", highlightbackground="#222222", highlightthickness=2)
+        c.pack(side="left", fill="x", expand=True)
+        label(row, "先週", 17, True).pack(side="left", padx=(10, 0))
+        ratio_canvases.append(c)
+        c.bind("<Configure>", lambda e, idx=i: draw_ratio_bar(idx))
+
+def create_weekly_table():
+    global weekly_cells
+
+    # Weekly inspection table
+    label(center, "週間検査数", 17, True).pack(anchor="w", pady=(10, 0))
+
+    weekly = tk.Frame(center, bg=PANEL)
+    weekly.pack(fill="x")
+
+    headers = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    weekly_cells = []
+
+    for c, h in enumerate(headers):
+        create_table_cell(
+            weekly, h, 0, c,
+            "white" if c == 0 else HEADER,
+            "white" if c else TEXT, 14, 9,
+        )
+
+    for r, shift in enumerate(["昼 勤", "夜 勤"], start=1):
+        create_table_cell(weekly, shift, r, 0, HEADER, "white", 14, 9)
+
+        row_cells = []
+        for c in range(1, 7):
+            cell = create_table_cell(
+                weekly, "0", r, c, "white", "#111111", 14, 9,
+            )
+            row_cells.append(cell)
+
+        weekly_cells.append(row_cells)
+
+    for c in range(7):
+        weekly.grid_columnconfigure(c, weight=1)
+
+def create_top_panel():
+    global day_group, night_group, center
+
+    top = tk.Frame(main, bg=PANEL, highlightbackground=LINE, highlightthickness=4)
+    top.grid(row=1, column=0, sticky="nsew")
+    top.grid_columnconfigure(0, minsize=350)
+    top.grid_columnconfigure(1, weight=1)   # 中央の列に、余った横幅を割り当てる
+    top.grid_columnconfigure(2, minsize=350)
+    top.grid_rowconfigure(0, weight=1)
+
+    day_group = create_staff_group(top, "昼勤メンバー", "#f0782b", "day")
+    day_group.grid(row=0, column=0, padx=15, pady=28, sticky="nsew")
+
+    night_group = create_staff_group(top, "夜勤メンバー", "#356bb3", "night")
+    night_group.grid(row=0, column=2, padx=15, pady=28, sticky="nsew")
+
+    center = tk.Frame(top, bg=PANEL)
+    center.grid(row=0, column=1, sticky="nsew", padx=20, pady=12)
+
+    create_ratio_section()
+    create_weekly_table()
+
+def create_bottom_panel():
+    bottom = tk.Frame(main, bg=PANEL, highlightbackground=LINE, highlightthickness=4)
+    bottom.grid(row=3, column=0, sticky="nsew")
+    bottom.grid_columnconfigure(0, minsize=520)
+    bottom.grid_columnconfigure(1, weight=1)
+    bottom.grid_columnconfigure(2, minsize=330)
+    bottom.grid_rowconfigure(0, weight=1)
+
+    left = tk.Frame(bottom, bg=PANEL)
+    left.grid(row=0, column=0, sticky="nsew", padx=14, pady=10)
+    create_kpi_table(left, "直近1時間（18：00〜19：00）", actual_recent, target_recent, "順調").pack(fill="x")
+    create_kpi_table(left, "累積生産数（8：00〜19：00）", actual_total, target_total, "超順調").pack(fill="x", pady=(8, 20))
+    control = tk.Frame(left, bg=PANEL)
+    control.pack(fill="x", pady=(12, 0))
+    tk.Button(
+        control,
+        text="目標入力",
+        **button_style,
+    ).grid(row=0, column=0, padx=(10, 18), sticky="w")
+
+    create_table_cell(control, "目標生産数", 0, 1, "white", "#111111", 15, 11)
+    create_table_cell(control, "300000", 0, 2, "white", "#111111", 15, 11)
+
+    mid = tk.Frame(bottom, bg=PANEL)
+    mid.grid(row=0, column=1, sticky="nsew", padx=14, pady=10)
+
+    create_progress_section(mid)
+    label(mid, "号機別生産数", 18, True).pack(anchor="w", pady=(0, 2))
+    machine = tk.Frame(mid, bg=PANEL)
+    machine.pack(fill="x")
+    for c, (name, count) in enumerate(machine_counts):
+        create_table_cell(machine, name, 0, c, HEADER, "white", 13, 9)
+        create_table_cell(machine, f"{count:,}", 1, c, "white", "#111111", 14, 9)
+        machine.grid_columnconfigure(c, weight=1)
+
+    create_bot_section(bottom)
+
+def create_progress_section(mid):
+    def make_progress(title_text, value, display_max=125):
+        """Draw progress using a common 0-125% scale.
+
+        display_max controls where the graph ends.  The scale itself always uses
+        125%, so the 100% position is identical in both graphs.
+        """
+        label(mid, title_text, 16, True).pack(anchor="w")
+
+        # Both graphs use the same 125% scale.
+        # A 100% graph therefore occupies 100 / 125 = 80% of the full width.
+        width_ratio = display_max / 125
+
+        progress_area = tk.Frame(mid, bg=PANEL, height=92)
+        progress_area.pack(fill="x", pady=(0, 10))
+        progress_area.pack_propagate(False)
+
+        axis = tk.Frame(progress_area, bg=PANEL)
+        axis.place(relx=0, rely=0, relwidth=width_ratio, height=25)
+
+        percentages = list(range(0, display_max + 1, 25))
+
+        # Put each percentage label directly above its actual x-position.
+        # Using grid() would center labels inside equal-width cells, which shifts
+        # 0%, 25%, ... away from the vertical guide lines.
+        for p in percentages:
+            if p == 0:
+                anchor = "w"
+            elif p == display_max:
+                anchor = "e"
+            else:
+                anchor = "center"
+
+            label(axis, f"{p}%", 13, True).place(
+                relx=p / display_max,
+                rely=0.5,
+                anchor=anchor,
+            )
+
+        cv = tk.Canvas(
+            progress_area,
+            bg="white",
+            highlightbackground="#555555",
+            highlightthickness=3,
+        )
+        cv.place(relx=0, y=25, relwidth=width_ratio, height=64)
+
+        def draw(e=None):
+            cv.delete("all")
+            w, h = cv.winfo_width(), cv.winfo_height()
+
+            # The canvas width represents display_max, so values over display_max
+            # are shown as a full bar.
+            cv.create_rectangle(
+                0, 0,
+                w * min(value / display_max, 1), h,
+                fill=PROGRESS,
+                outline="",
+            )
+
+            for p in percentages[1:]:
+                x = w * p / display_max
+                cv.create_line(
+                    x, 0, x, h,
+                    fill="#666666",
+                    width=3,
+                    dash=() if p == display_max else (8, 5),
+                )
+
+        cv.bind("<Configure>", draw)
+
+    make_progress("直近1時間（18：00〜19：00）", 113, display_max=125)
+    make_progress("累積生産数（8：00〜19：00）", 105, display_max=100)
+
+def create_bot_section(bottom):
+    global bot_label, bot_frames
+
+    bot_area = tk.Frame(bottom, bg=PANEL)
+    bot_area.grid(row=0, column=2, sticky="nsew", padx=18, pady=10)
+    bot_label = tk.Label(bot_area, bg=PANEL)
+    bot_label.pack(expand=True)
+    bot_frames = []
+
+    if Image is not None and BOT_GIF.exists():
+        gif = Image.open(BOT_GIF)
+        for frame in ImageSequence.Iterator(gif):
+            im = frame.convert("RGBA")
+            im.thumbnail((300, 300), Image.Resampling.LANCZOS)
+            bot_frames.append(ImageTk.PhotoImage(im))
+
+    animate_bot()
+
+def animate_bot(index=0):
+    if not bot_frames:
+        bot_label.configure(text="ANIMATION GIF\nimage/factory_bot.gif", fg=TEXT, font=(FONT, 18, "bold"))
+        return
+    bot_label.configure(image=bot_frames[index])
+    root.after(100, animate_bot, (index + 1) % len(bot_frames))
+
+# endregion
+
+# ================================================
+# region Event Handlers
+# ================================================
+
+def toggle_fullscreen(event=None):
+    """Toggle full-screen mode with F11."""
+    is_fullscreen = root.attributes("-fullscreen")
+    root.attributes("-fullscreen", not is_fullscreen)
+
+def swap_staff():
+    for day_combo, night_combo in zip(day_group.combos, night_group.combos):
+        day_name = day_combo.get()
+        night_name = night_combo.get()
+
+        day_combo.set(night_name)
+        night_combo.set(day_name)
+
+        day_combo.event_generate("<<ComboboxSelected>>")
+        night_combo.event_generate("<<ComboboxSelected>>")
+
+def save_staff_info():
+    STAFF_INFO["day"] = [
+        combo.get() for combo in day_group.combos
+    ]
+
+    STAFF_INFO["night"] = [
+        combo.get() for combo in night_group.combos
+    ]
+
+    with open(STAFF_INFO_FILE, "w", encoding="utf-8") as file:
+        json.dump(STAFF_INFO, file, ensure_ascii=False, indent=4)
+
+def on_close():
+    save_staff_info()
+    root.destroy()
+
+def show_results():
+    global results_visible, result_photo_modes
+
+    # 現在日時を1時間単位に切り捨てる
+    now = datetime.now().replace(minute=0, second=0, microsecond=0)
+
+    # 基準日時を入力
+    date_str = simpledialog.askstring(
+        "結果表示",
+        "基準日時を入力してください (YYYY-MM-DD HH:MM)",
+        initialvalue=now.strftime("%Y-%m-%d %H:%M"),
+        parent=root,
+    )
+
+    if date_str is None:
+        return
+
+    try:
+        base_datetime = datetime.strptime(date_str, "%Y-%m-%d %H:%M")
+        if base_datetime.minute != 0:
+            raise ValueError
+    except ValueError:
+        messagebox.showerror(
+            "入力エラー",
+            "日時は YYYY-MM-DD HH:00 の形式で入力してください。",
+            parent=root,
+        )
+        return
+
+    # 先週の同じ曜日・同じ時刻
+    previous_week_datetime = get_previous_week_datetime(base_datetime)
+
+    # 今週・先週の稼働時間を取得
+    try:
+        this_week_sec = get_operating_time(base_datetime)
+        last_week_sec = get_operating_time(previous_week_datetime)
+    except sqlite3.Error as error:
+        messagebox.showerror("DBエラー", str(error), parent=root)
+        return
+
+    # 稼働時間を分単位で表示
+    print(
+        f"This week ({base_datetime:%Y-%m-%d %H:%M}): "
+        f"{this_week_sec / 60:.1f} min"
+    )
+    print(
+        f"Last week ({previous_week_datetime:%Y-%m-%d %H:%M}): "
+        f"{last_week_sec / 60:.1f} min"
+    )
+
+    # 今週・先週の割合を計算
+    total_sec = this_week_sec + last_week_sec
+
+    if total_sec == 0:
+        messagebox.showerror(
+            "データエラー",
+            "今週と先週の稼働時間が両方とも0秒です。",
+            parent=root,
+        )
+        return
+
+    this_week_rate = round(this_week_sec / total_sec * 100)
+    last_week_rate = 100 - this_week_rate
+
+    print(f"Ratio: {this_week_rate}% / {last_week_rate}%")
+
+    # 上段グラフのデータを更新
+    ratio_specs[0] = (
+        f"【直近1時間】"
+        f"（{base_datetime:%H:%M}〜"
+        f"{base_datetime + timedelta(hours=1):%H:%M}）",
+        this_week_rate,
+        last_week_rate,
+    )
+
+    ratio_targets[0] = this_week_sec / total_sec
+
+    # 今週・先週の累積開始日時
+    this_week_start = get_shift_start_datetime(base_datetime)
+    last_week_start = get_shift_start_datetime(previous_week_datetime)
+
+    # 今週・先週の累積稼働時間を取得
+    try:
+        this_week_total = get_cumulative_operating_time(
+            this_week_start, base_datetime
+        )
+        last_week_total = get_cumulative_operating_time(
+            last_week_start, previous_week_datetime
+        )
+    except sqlite3.Error as error:
+        messagebox.showerror("DBエラー", str(error), parent=root)
+        return
+
+    # 累積稼働時間を分単位で出力
+    print(
+        f"Cumulative this week: {this_week_total / 60:.1f} min"
+    )
+    print(
+        f"Cumulative last week: {last_week_total / 60:.1f} min"
+    )
+
+    # 今週・先週の累積稼働時間比率
+    cumulative_total = this_week_total + last_week_total
+
+    if cumulative_total == 0:
+        messagebox.showerror(
+            "データエラー",
+            "今週と先週の累積稼働時間が両方とも0秒です。",
+            parent=root,
+        )
+        return
+
+    this_week_cumulative_rate = round(
+        this_week_total / cumulative_total * 100
+    )
+    last_week_cumulative_rate = 100 - this_week_cumulative_rate
+
+    print(
+        f"Cumulative ratio: "
+        f"{this_week_cumulative_rate}% / "
+        f"{last_week_cumulative_rate}%"
+    )
+
+    # 下段グラフのデータを更新
+    ratio_specs[1] = (
+        f"【全経過時間】"
+        f"（{this_week_start:%H:%M}〜"
+        f"{base_datetime + timedelta(hours=1):%H:%M}）",
+        this_week_cumulative_rate,
+        last_week_cumulative_rate,
+    )
+
+    ratio_targets[1] = this_week_total / cumulative_total
+
+    # 週間検査数を更新
+    try:
+        update_weekly_table(base_datetime)
+    except sqlite3.Error as error:
+        messagebox.showerror("DBエラー", str(error), parent=root)
+        return
+
+    # 基準時間の勤務帯と直近1時間の比率で写真の表情を決める
+    is_day_shift = 8 <= base_datetime.hour < 20
+    if this_week_rate >= 60:
+        result_photo_modes = ("smile", "sad") if is_day_shift else ("sad", "smile")
+    elif this_week_rate <= 40:
+        result_photo_modes = ("sad", "smile") if is_day_shift else ("smile", "sad")
+    else:
+        result_photo_modes = ("normal", "normal")
+
+    # 両方のグラフを表示
+    results_visible = True
+
+    ratio_title_labels[0].configure(text=ratio_specs[0][0])
+    ratio_title_labels[1].configure(text=ratio_specs[1][0])
+
+    # ドラムロール再生
+    winsound.PlaySound(
+        str(DRUM_SOUND),
+        winsound.SND_FILENAME | winsound.SND_ASYNC,
+    )
+
+    # 2つのグラフを同時にアニメーション
+    animate_ratio_bars()
+
+# endregion
+
+# ================================================
+# region Main
+# ================================================
+
+def initialize_app():
+    global root
+
+    root = tk.Tk()
+    root.title("稼働率勝負")
+    root.geometry(f"{SCREEN_WIDTH}x{SCREEN_HEIGHT}")
+    root.configure(bg=BG)
+    root.attributes("-fullscreen", True)
+
+    style = ttk.Style(root)
+    try:
+        style.theme_use("clam")
+    except tk.TclError:
+        pass
+    style.configure("Staff.TCombobox", font=(FONT, 11), padding=2)
+    root.option_add("*TCombobox*Listbox.font", (FONT, 11))
+
+def create_main_layout():
+    global main
+
+    main = tk.Frame(root, bg=BG)
+    main.pack(fill="both", expand=True, padx=15, pady=12)
+    main.grid_columnconfigure(0, weight=1)
+    main.grid_rowconfigure(1, weight=50)    # 1行目=上段パネル(可動率勝負)
+    main.grid_rowconfigure(3, weight=50)    # 3行目=下段パネル(生産数表示)
+
+    create_header()
+    create_top_panel()
+    # separator title
+    label(main, "本日の生産状況", 26, True, bg=BG).grid(row=2, column=0, sticky="w", pady=(8, 3))
+
+    create_bottom_panel()
+
+def setup_events():
+    result_button.configure(command=show_results)
+    root.bind("<F11>", toggle_fullscreen)
+    root.bind("<Escape>", lambda event: root.attributes("-fullscreen", False))
+    root.protocol("WM_DELETE_WINDOW", on_close)
+
+def main():
+    global STAFF_INFO, STAFF_NAMES
+
+    with open(STAFF_INFO_FILE, encoding="utf-8") as file:
+        STAFF_INFO = json.load(file)
+    STAFF_NAMES = ["NAME"] + list(STAFF_INFO["staff"].keys())
+
+    initialize_app()
+    create_main_layout()
+    setup_events()
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
+
+# endregion
+
