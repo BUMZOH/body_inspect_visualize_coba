@@ -8,8 +8,8 @@
 
 ## ToDo（勉強系）
 - ttk.Styleの使い方
-- 
-- 
+- grid_columnconfigure/grid_rowconfigure使い方(特にweight)
+- cvs_ratio.bind("<Configure>", lambda e, idx=i: draw_ratio_bar(idx)) の理解
 - 
 - 
 
