@@ -36,6 +36,14 @@ NIGHT = "#ffc928"
 PROGRESS = "#a9bfe4"
 ACCENT = "#ff5959"
 
+# 進捗状況別の棒グラフ色
+PROGRESS_COLORS = {
+    "超遅れ": "#FF0000",
+    "遅れ": "#FF8C00",
+    "順調": PROGRESS,
+    "作りすぎ": "#4B0082",
+}
+
 # FONT = "Yu Gothic"
 FONT = "UD デジタル 教科書体 NP"
 
@@ -93,9 +101,13 @@ STAFF_NAMES = []    # Combobox リスト作成用
 kpi_value_labels = {}
 kpi_title_labels = {}
 lbl_daily_goal = None  # 生産日の目標生産数を表示するLabel
+lbl_overtime = None
 
 # 下段中央の進捗グラフ（Canvas・見出し・達成率）
 progress_charts = {}
+
+# 下段中央の号機別生産数表示用
+machine_count_labels = {}
 # endregion
 
 # ================================================
@@ -237,12 +249,12 @@ def get_production_summary(base_datetime):
             (production_date.strftime("%Y-%m-%d"),),
         ).fetchone()
 
-    if row is None:
-        raise ValueError("生産日の生産目標が登録されていません。")
+    # 生産目標が未登録の場合は0として扱う
+    daily_goal = row[0] if row is not None else 0
 
-    daily_goal = row[0]
-    if daily_goal <= 0:
-        raise ValueError("生産日の生産目標は正の数である必要があります。")
+    # マイナス値は不正データとして扱う
+    if daily_goal < 0:
+        raise ValueError("生産日の生産目標は0以上である必要があります。")
 
     # 1時間の目標は24時間分の目標を24で割る
     recent_target = daily_goal / 24
@@ -256,15 +268,40 @@ def get_production_summary(base_datetime):
 
 
 def get_production_status(actual, target):
+    # 目標0の場合は進捗判定の対象外
+    if target <= 0:
+        return "対象外"
+
     rate = actual / target * 100
+
     if rate < 50:
         return "超遅れ"
     if rate < 100:
         return "遅れ"
     if rate < 125:
         return "順調"
+
     return "作りすぎ"
 
+
+def get_machine_production(start_datetime, end_datetime):
+    """指定期間の生産数を号機別に集計する。"""
+    start_str = start_datetime.strftime("%Y-%m-%d %H:%M")
+    end_str = end_datetime.strftime("%Y-%m-%d %H:%M")
+
+    with sqlite3.connect(DB_FILE) as conn:
+        rows = conn.execute(
+            """
+            SELECT machine_no, SUM(production_num_1hour)
+            FROM production_result
+            WHERE date_hour >= ? AND date_hour < ?
+            GROUP BY machine_no
+            ORDER BY machine_no
+            """,
+            (start_str, end_str),
+        ).fetchall()
+
+    return dict(rows)
 # endregion
 
 # ================================================
@@ -429,9 +466,21 @@ def create_kpi_table(parent, title_text, actual, target, status, key):
 
 
 def update_kpi_table(key, actual, target):
-    rate = actual / target * 100
-    status = get_production_status(actual, target)
-    values = [f"{actual:,}", f"{target:,.0f}", f"{round(rate)}%", status]
+    # 目標0の場合は達成率を計算しない
+    if target <= 0:
+        rate_text = "-"
+        status = "対象外"
+    else:
+        rate = actual / target * 100
+        rate_text = f"{round(rate)}%"
+        status = get_production_status(actual, target)
+
+    values = [
+        f"{actual:,}",
+        f"{target:,.0f}",
+        rate_text,
+        status,
+    ]
 
     for lbl_cell, value in zip(kpi_value_labels[key], values):
         lbl_cell.configure(text=value)
@@ -575,6 +624,8 @@ def create_header():
     btn_result = tk.Button(frm_header, text="結果表示", **button_style)
     btn_result.grid(row=0, column=1, padx=5)
     tk.Button(frm_header, text="メンバ入替", command=swap_staff, **button_style).grid(row=0, column=2, padx=5)
+    tk.Button(frm_header, text="目標入力", command=input_production_goal, **button_style).grid(row=0, column=3, padx=5)
+
 
 def create_ratio_section():
     global lbl_ratio_titles
@@ -653,7 +704,7 @@ def create_top_panel():
     create_weekly_table()
 
 def create_bottom_panel():
-    global lbl_daily_goal
+    global lbl_daily_goal, lbl_overtime
     frm_bottom = tk.Frame(frm_main, bg=PANEL, highlightbackground=LINE, highlightthickness=4)
     frm_bottom.grid(row=3, column=0, sticky="nsew")
     frm_bottom.grid_columnconfigure(0, minsize=520)
@@ -671,17 +722,23 @@ def create_bottom_panel():
     ).pack(fill="x", pady=(8, 20))
     frm_control = tk.Frame(frm_left, bg=PANEL)
     frm_control.pack(fill="x", pady=(12, 0))
-    tk.Button(
-        frm_control,
-        text="目標入力",
-        **button_style,
-    ).grid(row=0, column=0, padx=(10, 18), sticky="w")
 
-    create_table_cell(frm_control, "目標生産数", 0, 1, "white", "#111111", 15, 11)
+    # 上のKPI表と同じ幅を4等分し、1列分を使用する
+    for c in range(4):
+        frm_control.grid_columnconfigure(c, weight=1, uniform="kpi")
+
+    # 上段：見出し
+    create_table_cell(frm_control, "目標生産数", 0, 0, HEADER, "white", 14, 9)
+
+    # 下段：目標生産数
     # 結果表示時にDBの目標生産数へ更新できるようLabelを保持する
-    lbl_daily_goal = create_table_cell(
-        frm_control, "-", 0, 2, "white", "#111111", 15, 11
-    )
+    lbl_daily_goal = create_table_cell(frm_control, "-", 1, 0, "white", "#111111", 14, 9)
+
+    
+    # 残業目安を縦2段の表で表示する
+    create_table_cell(frm_control, "残業目安", 0, 1, HEADER, "white", 14, 9)
+    lbl_overtime = create_table_cell(frm_control, "", 1, 1, "white", "#111111", 14, 9)
+
 
     frm_middle = tk.Frame(frm_bottom, bg=PANEL)
     frm_middle.grid(row=0, column=1, sticky="nsew", padx=14, pady=10)
@@ -690,9 +747,17 @@ def create_bottom_panel():
     label(frm_middle, "号機別生産数", 18, True).pack(anchor="w", pady=(0, 2))
     frm_machine = tk.Frame(frm_middle, bg=PANEL)
     frm_machine.pack(fill="x")
-    for c, (name, count) in enumerate(machine_counts):
-        create_table_cell(frm_machine, name, 0, c, HEADER, "white", 13, 9)
-        create_table_cell(frm_machine, f"{count:,}", 1, c, "white", "#111111", 14, 9)
+
+    for c, machine_no in enumerate([412, 413, 416, 421, 428]):
+        create_table_cell(
+            frm_machine, f"No.{machine_no}", 0, c,
+            HEADER, "white", 13, 9
+        )
+        lbl_count = create_table_cell(
+            frm_machine, "0", 1, c,
+            "white", "#111111", 14, 9
+        )
+        machine_count_labels[machine_no] = lbl_count
         frm_machine.grid_columnconfigure(c, weight=1)
 
     create_bot_section(frm_bottom)
@@ -766,11 +831,16 @@ def draw_progress_chart(key):
     if w <= 1:
         return
 
+
+    # 達成率に応じて進捗状況を判定し、棒グラフの色を決める
+    status = get_production_status(rate, 100)
+    bar_color = PROGRESS_COLORS[status]
+
     # 達成率が表示上限を超えた場合は、バーを右端で止める
     # 例：150%のとき、125%スケールでは125%まで塗りつぶす
     bar_ratio = max(0, min(rate / display_max, 1))
     cvs_progress.create_rectangle(
-        0, 0, w * bar_ratio, h, fill=PROGRESS, outline=""
+        0, 0, w * bar_ratio, h, fill=bar_color, outline=""
     )
 
     # 25%刻みの目盛り線をバーの上に重ねる
@@ -810,12 +880,24 @@ def create_bot_section(frm_bottom):
 
     animate_bot()
 
+
 def animate_bot(index=0):
     if not bot_frames:
         lbl_bot.configure(text="ANIMATION GIF\nimage/factory_bot.gif", fg=TEXT, font=(FONT, 18, "bold"))
         return
     lbl_bot.configure(image=bot_frames[index])
     root.after(100, animate_bot, (index + 1) % len(bot_frames))
+
+
+def update_machine_production(start_datetime, end_datetime):
+    """指定期間の号機別生産数を画面に表示する。"""
+    machine_counts = get_machine_production(
+        start_datetime, end_datetime
+    )
+
+    for machine_no, lbl_count in machine_count_labels.items():
+        count = machine_counts.get(machine_no, 0)
+        lbl_count.configure(text=f"{count:,}")
 
 # endregion
 
@@ -827,6 +909,83 @@ def toggle_fullscreen(event=None):
     """Toggle full-screen mode with F11."""
     is_fullscreen = root.attributes("-fullscreen")
     root.attributes("-fullscreen", not is_fullscreen)
+
+
+def input_production_goal():
+    """指定日の生産目標をDBに登録または更新する。"""
+
+    # 今日の日付と目標生産数0をデフォルト値にする
+    default_value = f"{datetime.now():%Y-%m-%d}/0"
+
+    input_text = simpledialog.askstring(
+        "目標入力",
+        "日付/目標生産数を入力してください\n"
+        "例：2026-11-06/110000",
+        initialvalue=default_value,
+        parent=root,
+    )
+
+    # キャンセル時は何もしない
+    if input_text is None:
+        return
+
+    # 入力形式を確認する
+    try:
+        # 入力文字列から半角スペースを削除する
+        input_text = input_text.replace(" ", "")
+
+        date_str, goal_str = input_text.strip().split("/")
+        target_date = datetime.strptime(date_str, "%Y-%m-%d")
+        production_goal = int(goal_str)
+
+        # 日付の書式を確認する
+        if target_date.strftime("%Y-%m-%d") != date_str:
+            raise ValueError
+
+        # 目標生産数は0以上の整数のみ許可する
+        if production_goal < 0:
+            raise ValueError
+
+    except ValueError:
+        messagebox.showerror(
+            "入力エラー",
+            "入力形式または目標生産数が正しくありません。\n"
+            "例：2026-11-06/110000\n"
+            "目標生産数は0以上の整数を入力してください。",
+            parent=root,
+        )
+        return
+
+    # DBに登録または更新する
+    try:
+        with sqlite3.connect(DB_FILE) as conn:
+            conn.execute(
+                """
+                INSERT INTO production_goal (date, production_goal)
+                VALUES (?, ?)
+                ON CONFLICT(date) DO UPDATE SET
+                    production_goal = excluded.production_goal
+                """,
+                (date_str, production_goal),
+            )
+
+    except sqlite3.Error as error:
+        messagebox.showerror(
+            "DBエラー",
+            str(error),
+            parent=root,
+        )
+        return
+
+    # 登録完了を通知する
+    messagebox.showinfo(
+        "目標入力",
+        f"登録が完了しました。\n\n"
+        f"日付：{date_str}\n"
+        f"目標生産数：{production_goal:,}",
+        parent=root,
+    )
+
 
 def swap_staff():
     for day_combo, night_combo in zip(frm_day_group.combos, frm_night_group.combos):
@@ -1045,9 +1204,27 @@ def show_results():
     daily_goal = round(recent_target * 24)
     lbl_daily_goal.configure(text=f"{daily_goal:,}")
 
+    # 下段中央の号機別生産数を更新
+    try:
+        update_machine_production(start_datetime, end_datetime)
+    except sqlite3.Error as error:
+        messagebox.showerror("DBエラー", str(error), parent=root)
+        return
+
     # 下段左側の生産状況を更新
     update_kpi_table("recent", recent_actual, recent_target)
     update_kpi_table("total", total_actual, total_target)
+
+    # 目標0の場合は残業なしとする
+    if total_target <= 0:
+        lbl_overtime.configure(text="なし")
+    else:
+        total_rate = total_actual / total_target * 100
+
+        if total_rate < 100:
+            lbl_overtime.configure(text="あり")
+        else:
+            lbl_overtime.configure(text="なし")
 
     # 下段中央の進捗グラフも左側KPIと同じ実績・目標で更新する
     update_progress_chart(

@@ -30,8 +30,7 @@ def create_table():
             CREATE TABLE IF NOT EXISTS production_goal (
                 date TEXT PRIMARY KEY NOT NULL,
                 production_goal INTEGER NOT NULL
-                    CHECK (production_goal BETWEEN 50000 AND 150000)
-                    CHECK (production_goal % 5000 = 0)
+                    CHECK (production_goal >= 0)
             )
             """
         )
