@@ -356,7 +356,7 @@ def create_staff_group(parent, title, title_color, shift):
         staff_name = STAFF_INFO[shift][i]
         photo_path = None
 
-        if staff_name != "NAME":
+        if staff_name and staff_name != "NAME":
             base_name = STAFF_INFO["staff"][staff_name]
             photo_path = STAFF_PHOTO_DIR / f"{base_name}_normal.png"
 
