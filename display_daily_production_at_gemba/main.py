@@ -76,6 +76,11 @@ btn_result = None
 frm_day_group = None
 frm_night_group = None
 
+# 自動結果発表
+auto_result_enabled = False     # 自動発表の有効・無効を保持
+lbl_auto_result = None          # ヘッダーに表示する状態Label
+last_auto_result_hour = None    # 同じ時間帯の自動発表を重複実行しないための記録
+
 # Ratio bars
 results_visible = False
 cvs_ratios = []
@@ -635,7 +640,7 @@ def update_weekly_table(base_datetime):
             )
 
 def create_header():
-    global btn_result, button_style
+    global btn_result, button_style, lbl_auto_result
 
     frm_header = tk.Frame(frm_main, bg=BG)
     frm_header.grid(row=0, column=0, sticky="ew", pady=(0, 6))
@@ -653,11 +658,20 @@ def create_header():
         padx=28,
         pady=7,
     )
+
     # 以下"**"は辞書展開 → 辞書の内容をキーワード引数として渡す
+    lbl_auto_result = label(frm_header, "自動発表=無効", 16, True, bg=BG)
+    lbl_auto_result.grid(row=0, column=1, padx=15)
+
+    btn_auto_result = tk.Button(frm_header, text="自動発表切替", command=toggle_auto_result, **button_style)
+    btn_auto_result.grid(row=0, column=2, padx=5)
+
     btn_result = tk.Button(frm_header, text="結果表示", **button_style)
-    btn_result.grid(row=0, column=1, padx=5)
-    tk.Button(frm_header, text="メンバ入替", command=swap_staff, **button_style).grid(row=0, column=2, padx=5)
-    tk.Button(frm_header, text="目標入力", command=input_production_goal, **button_style).grid(row=0, column=3, padx=5)
+    btn_result.grid(row=0, column=3, padx=5)
+
+    tk.Button(frm_header, text="メンバ入替", command=swap_staff, **button_style).grid(row=0, column=4, padx=5)
+
+    tk.Button(frm_header, text="目標入力", command=input_production_goal, **button_style).grid(row=0, column=5, padx=5)
 
 
 def create_ratio_section():
@@ -1031,6 +1045,7 @@ def swap_staff():
         day_combo.event_generate("<<ComboboxSelected>>")
         night_combo.event_generate("<<ComboboxSelected>>")
 
+
 def save_staff_info():
     STAFF_INFO["day"] = [
         combo.get() for combo in frm_day_group.combos
@@ -1043,13 +1058,13 @@ def save_staff_info():
     with open(STAFF_INFO_FILE, "w", encoding="utf-8") as file:
         json.dump(STAFF_INFO, file, ensure_ascii=False, indent=4)
 
+
 def on_close():
     save_staff_info()
     root.destroy()
 
-def show_results():
-    global results_visible, result_photo_modes
 
+def show_results():
     # 現在時刻の前の時間をデフォルト値とする
     now = (datetime.now() - timedelta(hours=1)).replace(
         minute=0, second=0, microsecond=0
@@ -1077,6 +1092,12 @@ def show_results():
             parent=root,
         )
         return
+
+    execute_results(base_datetime)
+
+
+def execute_results(base_datetime):
+    global results_visible, result_photo_modes
 
     # 下段左側の生産実績・目標を取得
     try:
@@ -1284,6 +1305,41 @@ def show_results():
     # 2つのグラフを同時にアニメーション
     animate_ratio_bars()
 
+
+def toggle_auto_result():
+    global auto_result_enabled
+
+    auto_result_enabled = not auto_result_enabled
+
+    status = "有効" if auto_result_enabled else "無効"
+    lbl_auto_result.configure(text=f"自動発表={status}")
+
+
+def auto_show_results():
+    # 直前の1時間を基準日時とする
+    base_datetime = (datetime.now() - timedelta(hours=1)).replace(
+        minute=0, second=0, microsecond=0
+    )
+
+    execute_results(base_datetime)
+
+
+def check_auto_results():
+    global last_auto_result_hour
+
+    now = datetime.now()
+    current_hour = now.replace(minute=0, second=0, microsecond=0)
+
+    # 毎時05分に自動発表する
+    if auto_result_enabled and now.minute == 5:
+        # 同じ時間帯の重複発表を防止
+        if last_auto_result_hour != current_hour:
+            last_auto_result_hour = current_hour
+            auto_show_results()
+
+    # 1秒後に再確認
+    root.after(1000, check_auto_results)
+
 # endregion
 
 # ================================================
@@ -1339,6 +1395,10 @@ def main():
     initialize_app()
     create_main_layout()
     setup_events()
+
+    # 自動結果発表の時刻監視を開始
+    root.after(1000, check_auto_results)
+
     root.mainloop()
 
 
