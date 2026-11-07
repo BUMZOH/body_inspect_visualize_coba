@@ -173,14 +173,6 @@ def receive_all_machines(machines):
 # ================================================
 # Database
 # ================================================
-def connect_database():
-    """既存のSQLite DBに接続する。DBが存在しない場合はエラー。"""
-    # mode=rw はDBファイルを新規作成しない。
-    connection = sqlite3.connect(f"{DB_FILE.resolve().as_uri()}?mode=rw", uri=True)
-    connection.execute("PRAGMA busy_timeout = 5000")
-    return connection
-
-
 def insert_production_data(connection, machine_no, rows):
     """1台分を1トランザクションでUPSERTする。"""
     if not rows:
@@ -196,20 +188,26 @@ def insert_production_data(connection, machine_no, rows):
 # ================================================
 # Main
 # ================================================
-def run_once(machines, connection):
+def run_once(machines):
     """1回の収集サイクル。受信は並列、DB登録は逐次実行する。"""
     log("収集開始")
     received, failed = receive_all_machines(machines)
     total_rows = 0
 
-    for machine_no, rows in received:
-        try:
-            count = insert_production_data(connection, machine_no, rows)
-            total_rows += count
-            log(f"PLC {machine_no}: DB登録成功 {count}件")
-        except sqlite3.Error as error:
-            failed.append(machine_no)
-            log(f"PLC {machine_no}: DB登録失敗: {error}")
+    # PLC受信完了後にDBへ接続
+    conn = sqlite3.connect(DB_FILE)
+
+    try:
+        for machine_no, rows in received:
+            try:
+                count = insert_production_data(conn, machine_no, rows)
+                total_rows += count
+                log(f"PLC {machine_no}: DB登録成功 {count}件")
+            except sqlite3.Error as error:
+                failed.append(machine_no)
+                log(f"PLC {machine_no}: DB登録失敗: {error}")
+    finally:
+        conn.close()
 
     log(
         f"収集終了: DB登録={total_rows}件 / "
@@ -221,23 +219,30 @@ def main():
     """起動時に設定・DBを確認し、停止されるまで定期収集する。"""
     machines = load_config()
 
-    # 接続確認は初回収集より前に行う。DBファイルが無ければ即終了。
-    with connect_database() as connection:
-        # テーブルが存在しなければ即終了する。
-        connection.execute("SELECT 1 FROM production_result LIMIT 1")
-        log(f"起動: PLC={len(machines)}台 / DB={DB_FILE}")
+    # DBファイルの存在確認
+    if not DB_FILE.is_file():
+        raise FileNotFoundError(f"DBファイルが存在しません: {DB_FILE}")
 
-        while True:
-            try:
-                run_once(machines, connection)
-            except sqlite3.Error:
-                # DB自体の致命的な障害はログに埋もれさせず停止する。
-                raise
-            except Exception as error:
-                log(f"収集サイクルで予期しないエラー: {error}")
+    # production_resultテーブルの存在確認
+    conn = sqlite3.connect(DB_FILE)
+    try:
+        conn.execute("SELECT 1 FROM production_result LIMIT 1")
+    finally:
+        conn.close()
 
-            log(f"次回収集まで{INTERVAL_SEC}秒待機")
-            time.sleep(INTERVAL_SEC)
+    log(f"起動: PLC={len(machines)}台 / DB={DB_FILE}")
+
+    while True:
+        try:
+            run_once(machines)
+        except sqlite3.Error:
+            # DB自体の致命的な障害はログに埋もれさせず停止する。
+            raise
+        except Exception as error:
+            log(f"収集サイクルで予期しないエラー: {error}")
+
+        log(f"次回収集まで{INTERVAL_SEC}秒待機")
+        time.sleep(INTERVAL_SEC)
 
 
 if __name__ == "__main__":

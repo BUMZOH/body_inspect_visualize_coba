@@ -1,14 +1,12 @@
 ## ToDo（作業系）
-- PLCデータ収集アプリ
-- DBデータ応答アプリ(FlaskによるHTTPサーバ)
-- DBファイル場所と名称変更
+
 
 
 ## ToDo（勉強系）
 - ttk.Styleの使い方
 - grid_columnconfigure/grid_rowconfigure使い方(特にweight)
 - cvs_ratio.bind("<Configure>", lambda e, idx=i: draw_ratio_bar(idx)) の理解
-- 
+- ThreadPoolExecutor(マルチスレッド)の復習
 - 
 
 
@@ -20,7 +18,9 @@
 - 下段「本日の生産状況」作成
 - DBファイル分割検討
 - 結果表示を毎時5分に実行する機能「自動結果発表」追加
-- 
+- DBファイル場所と名称変更
+- PLCデータ収集アプリ
+- DBデータ応答アプリ(FlaskによるHTTPサーバ)→廃止
   
 
 
