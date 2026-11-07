@@ -10,9 +10,15 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
+from typing import TypeAlias
 
 from common_lib_mw import kv_com
 
+
+MachineConfig: TypeAlias = dict[str, str]
+Machines: TypeAlias = dict[str, MachineConfig]
+ProductionRow: TypeAlias = tuple[int, str, int, int]
+ReceivedMachine: TypeAlias = tuple[str, list[ProductionRow]]
 
 # ================================================
 # Settings
@@ -45,13 +51,13 @@ ON CONFLICT(machine_no, date_hour) DO UPDATE SET
 # ================================================
 # Common
 # ================================================
-def log(message):
+def log(message: str) -> None:
     """日時を付けてコンソールへ出力する。"""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{now}] {message}", flush=True)
 
 
-def load_config():
+def load_config() -> Machines:
     """設定ファイルから通信対象の設備一覧を読み込む。"""
     with CONFIG_FILE.open(encoding="utf-8") as file:
         config = json.load(file)
@@ -71,7 +77,9 @@ def load_config():
 # ================================================
 # PLC communication
 # ================================================
-def receive_machine_data(machine_no, machine_config):
+def receive_machine_data(
+    machine_no: str, machine_config: MachineConfig
+) -> tuple[str, list[ProductionRow], int]:
     """1台のPLCから500件×3項目を読み取り、DB登録用の行を返す。
 
     3領域のいずれかの読み取りに失敗した場合は例外を送出する。
@@ -95,9 +103,9 @@ def receive_machine_data(machine_no, machine_config):
     ):
         raise ValueError(f"設備{machine_no}: 受信件数が500件ではありません")
 
-    rows = []
-    skipped = 0
-    seen_dates = set()
+    rows = []           # DB登録用のデータ一覧
+    skipped = 0         # 日時が0でスキップした件数
+    seen_dates = set()  # 日時の重複チェック用
 
     for index, (seconds, operating_sec, production_num) in enumerate(
         zip(date_values, operating_values, production_values)
@@ -143,7 +151,9 @@ def receive_machine_data(machine_no, machine_config):
     return machine_no, rows, skipped
 
 
-def receive_all_machines(machines):
+def receive_all_machines(
+    machines: Machines,
+) -> tuple[list[ReceivedMachine], list[str]]:
     """PLC受信だけを並列実行する。失敗した設備は個別に記録する。"""
     received = []
     failed = []
@@ -161,7 +171,7 @@ def receive_all_machines(machines):
                 received.append((machine_no, rows))
                 log(
                     f"PLC {machine_no}: 受信成功 "
-                    f"登録対象={len(rows)}件 / 日時0={skipped}件"
+                    f"登録対象={len(rows)}件 / 日時0で除外={skipped}件"
                 )
             except Exception as error:
                 failed.append(machine_no)
@@ -173,7 +183,9 @@ def receive_all_machines(machines):
 # ================================================
 # Database
 # ================================================
-def insert_production_data(connection, machine_no, rows):
+def insert_production_data(
+    connection: sqlite3.Connection, machine_no: str, rows: list[ProductionRow]
+) -> int:
     """1台分を1トランザクションでUPSERTする。"""
     if not rows:
         return 0
@@ -188,7 +200,7 @@ def insert_production_data(connection, machine_no, rows):
 # ================================================
 # Main
 # ================================================
-def run_once(machines):
+def run_once(machines: Machines) -> None:
     """1回の収集サイクル。受信は並列、DB登録は逐次実行する。"""
     log("収集開始")
     received, failed = receive_all_machines(machines)
@@ -215,7 +227,7 @@ def run_once(machines):
     )
 
 
-def main():
+def main() -> None:
     """起動時に設定・DBを確認し、停止されるまで定期収集する。"""
     machines = load_config()
 
@@ -242,7 +254,12 @@ def main():
             log(f"収集サイクルで予期しないエラー: {error}")
 
         log(f"次回収集まで{INTERVAL_SEC}秒待機")
-        time.sleep(INTERVAL_SEC)
+
+        for _ in range(INTERVAL_SEC):
+            print(".", end="", flush=True)
+            time.sleep(1)
+
+        print()
 
 
 if __name__ == "__main__":
