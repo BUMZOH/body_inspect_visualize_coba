@@ -311,7 +311,7 @@ def get_machine_production(start_datetime, end_datetime):
 def label(parent, text="", size=16, bold=False, fg=TEXT, bg=PANEL, **kwargs):
     return tk.Label(parent, text=text, font=(FONT, size, "bold" if bold else "normal"), fg=fg, bg=bg, **kwargs)
 
-def load_photo(path, size=(105, 118)):
+def load_photo(path, size=(112, 200)):
     if not path.exists():
         return None
     im = Image.open(path).convert("RGB")
@@ -335,7 +335,15 @@ def create_staff_group(parent, title, title_color, shift):
     frm_staff.combos = []
     frm_staff.photos = []
 
-    label(frm_staff, title, 18, True, title_color).pack(pady=(0, 8))
+    frm_title = tk.Frame(frm_staff, bg=PANEL)
+    frm_title.pack(pady=(0, 2))
+
+    label(frm_title, title, 18, True, title_color).pack(side="left")
+
+    lbl_result = label(frm_title, "", 18, True, "#000000")
+    lbl_result.pack(side="left", padx=(12, 0))
+    # frm_staff に勝敗表示用Labelを保持させ、後から表示内容を変更する
+    frm_staff.lbl_result = lbl_result
 
     frm_grid = tk.Frame(frm_staff, bg=PANEL)
     frm_grid.pack(padx=7, pady=(0, 7))
@@ -344,12 +352,12 @@ def create_staff_group(parent, title, title_color, shift):
         frm_card = tk.Frame(
             frm_grid,
             width=112,
-            height=154,
+            height=200,  # 154 → 180
             bg=PANEL,
             highlightbackground=LINE,
             highlightthickness=1,
         )
-        frm_card.grid(row=i // 3, column=i % 3)
+        frm_card.grid(row=i // 3, column=i % 3, sticky="nsew")
         frm_card.grid_propagate(False)
 
         # Find the staff member assigned to this position
@@ -363,7 +371,14 @@ def create_staff_group(parent, title, title_color, shift):
         # Display photo
         photo = load_photo(photo_path) if photo_path else None
 
-        lbl_photo = tk.Label(frm_card, bg="white")
+        lbl_photo = tk.Label(
+            frm_card,
+            bg="white",
+            padx=0,
+            pady=0,
+            borderwidth=0,
+            highlightthickness=0,
+        )
 
         if photo:
             lbl_photo.configure(image=photo)
@@ -431,6 +446,21 @@ def update_staff_photos(frm_group, mode):
         else:
             lbl_photo.configure(image="", text="PHOTO")
             lbl_photo.image = None
+
+
+def update_staff_result(frm_group, mode):
+    result_settings = {
+        "smile": ("WIN", "#ff0000"),
+        "sad": ("LOSE", "#0000ff"),
+        "normal": ("DRAW", "#000000"),
+    }
+
+    result_text, result_color = result_settings[mode]
+
+    frm_group.lbl_result.configure(
+        text=result_text,
+        fg=result_color,
+    )
 
 
 def create_table_cell(parent, text, row, col, bg="white", fg="#111111", size=15, width=10, bold=True):
@@ -546,6 +576,9 @@ def animate_ratio_bars(step=0):
         update_staff_photos(frm_day_group, result_photo_modes[0])
         update_staff_photos(frm_night_group, result_photo_modes[1])
 
+        update_staff_result(frm_day_group, result_photo_modes[0])
+        update_staff_result(frm_night_group, result_photo_modes[1])
+
         # 結果発表音
         winsound.PlaySound(
             str(BANG_SOUND),
@@ -635,7 +668,7 @@ def create_ratio_section():
     # 上下2つの可動率グラフを作成する
     for i, (title, _, _) in enumerate(ratio_specs):
         lbl_title = label(frm_center, "", 19, True)
-        lbl_title.pack(pady=(0 if i == 0 else 18, 4))
+        lbl_title.pack(pady=(30 if i == 0 else 18, 4))
         lbl_ratio_titles.append(lbl_title)
 
         frm_row = tk.Frame(frm_center, bg=PANEL)
@@ -651,7 +684,7 @@ def create_weekly_table():
     global lbl_weekly_cells
 
     # Weekly inspection table
-    label(frm_center, "週間検査数", 17, True).pack(anchor="w", pady=(10, 0))
+    label(frm_center, "週間検査数", 17, True).pack(anchor="w", pady=(60, 0))
 
     frm_weekly = tk.Frame(frm_center, bg=PANEL)
     frm_weekly.pack(fill="x")
@@ -692,10 +725,10 @@ def create_top_panel():
     frm_top.grid_rowconfigure(0, weight=1)
 
     frm_day_group = create_staff_group(frm_top, "昼勤メンバー", "#f0782b", "day")
-    frm_day_group.grid(row=0, column=0, padx=15, pady=28, sticky="nsew")
+    frm_day_group.grid(row=0, column=0, padx=15, pady=10, sticky="nsew")
 
     frm_night_group = create_staff_group(frm_top, "夜勤メンバー", "#356bb3", "night")
-    frm_night_group.grid(row=0, column=2, padx=15, pady=28, sticky="nsew")
+    frm_night_group.grid(row=0, column=2, padx=15, pady=10, sticky="nsew")
 
     frm_center = tk.Frame(frm_top, bg=PANEL)
     frm_center.grid(row=0, column=1, sticky="nsew", padx=20, pady=12)
