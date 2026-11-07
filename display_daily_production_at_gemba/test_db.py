@@ -6,7 +6,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_DIR = BASE_DIR / "data"
-DB_FILE = DB_DIR / "body_inspection_machine.db"
+DB_FILE = BASE_DIR.parent / "data" / "body_insp_production_data.db"
 
 
 def create_table():

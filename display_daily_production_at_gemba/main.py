@@ -13,7 +13,7 @@ from PIL import Image, ImageTk, ImageSequence
 # region Settings
 # ================================================
 BASE_DIR = Path(__file__).resolve().parent
-DB_FILE = BASE_DIR / "data" / "body_inspection_machine.db"
+DB_FILE = BASE_DIR.parent / "data" / "body_insp_production_data.db"
 IMAGE_DIR = BASE_DIR / "image"
 BOT_GIF = IMAGE_DIR / "factory_bot.gif"
 
@@ -75,6 +75,8 @@ frm_center = None
 btn_result = None
 frm_day_group = None
 frm_night_group = None
+
+lbl_target_date = None  # 対象日表示用
 
 # 自動結果発表
 auto_result_enabled = False     # 自動発表の有効・無効を保持
@@ -640,13 +642,22 @@ def update_weekly_table(base_datetime):
             )
 
 def create_header():
-    global btn_result, button_style, lbl_auto_result
+    global btn_result, button_style, lbl_auto_result, lbl_target_date
 
     frm_header = tk.Frame(frm_main, bg=BG)
     frm_header.grid(row=0, column=0, sticky="ew", pady=(0, 6))
     # 0列目だけが余った横幅を受け取る設定(ボタンが右寄せになる)
     frm_header.grid_columnconfigure(0, weight=1)
-    label(frm_header, "可動率勝負", 28, True, bg=BG).grid(row=0, column=0, sticky="w")
+
+    # タイトルと対象日を横並びに配置
+    frm_title = tk.Frame(frm_header, bg=BG)
+    frm_title.grid(row=0, column=0, sticky="w")
+
+    label(frm_title, "可動率勝負", 28, True, bg=BG).pack(side="left")
+
+    lbl_target_date = label(frm_title, "対象日: ---- -- --", 16, True, bg=BG)
+    lbl_target_date.pack(side="left", padx=(30, 0))
+
     button_style = dict(
         font=(FONT, 15),
         bg="#f0f0f0",
@@ -738,10 +749,10 @@ def create_top_panel():
     frm_top.grid_columnconfigure(2, minsize=350)
     frm_top.grid_rowconfigure(0, weight=1)
 
-    frm_day_group = create_staff_group(frm_top, "昼勤メンバー", "#f0782b", "day")
+    frm_day_group = create_staff_group(frm_top, "☀ 昼勤メンバー", "#f0782b", "day")
     frm_day_group.grid(row=0, column=0, padx=15, pady=10, sticky="nsew")
 
-    frm_night_group = create_staff_group(frm_top, "夜勤メンバー", "#356bb3", "night")
+    frm_night_group = create_staff_group(frm_top, "☾ 夜勤メンバー", "#356bb3", "night")
     frm_night_group.grid(row=0, column=2, padx=15, pady=10, sticky="nsew")
 
     frm_center = tk.Frame(frm_top, bg=PANEL)
@@ -760,7 +771,7 @@ def create_bottom_panel():
     frm_bottom.grid_rowconfigure(0, weight=1)
 
     frm_left = tk.Frame(frm_bottom, bg=PANEL)
-    frm_left.grid(row=0, column=0, sticky="nsew", padx=14, pady=10)
+    frm_left.grid(row=0, column=0, sticky="nsew", padx=14, pady=(25,10))
     create_kpi_table(
         frm_left, "直近1時間", 0, 0, "-", "recent"
     ).pack(fill="x")
@@ -1118,6 +1129,10 @@ def execute_results(base_datetime):
     except sqlite3.Error as error:
         messagebox.showerror("DBエラー", str(error), parent=root)
         return
+
+    # 対象日を更新（8:00を日付の切替時刻とする）
+    target_date = base_datetime - timedelta(hours=8)
+    lbl_target_date.configure(text=f"対象日: {target_date:%Y-%m-%d}")
 
     # 稼働時間を分単位で表示
     print(
