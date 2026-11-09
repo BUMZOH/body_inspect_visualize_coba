@@ -14,8 +14,14 @@ from PIL import Image, ImageTk, ImageSequence
 # ================================================
 BASE_DIR = Path(__file__).resolve().parent
 DB_FILE = BASE_DIR.parent / "data" / "body_insp_production_data.db"
-IMAGE_DIR = BASE_DIR / "image"
-BOT_GIF = IMAGE_DIR / "factory_bot.gif"
+
+ANIMATION_GIF_DIR = BASE_DIR / "animation_gif"
+PROGRESS_GIFS = {
+    "超遅れ": ANIMATION_GIF_DIR / "severely_behind.gif",
+    "遅れ": ANIMATION_GIF_DIR / "behind.gif",
+    "順調": ANIMATION_GIF_DIR / "on_track.gif",
+    "作りすぎ": ANIMATION_GIF_DIR / "overproduction.gif",
+}
 
 STAFF_PHOTO_DIR = BASE_DIR / "staff_photo"
 STAFF_INFO_FILE = BASE_DIR / "staff_shift_info.json"
@@ -23,6 +29,8 @@ STAFF_INFO_FILE = BASE_DIR / "staff_shift_info.json"
 SOUND_DIR = BASE_DIR / "sound"
 DRUM_SOUND = SOUND_DIR / "drum_roll.wav"
 BANG_SOUND = SOUND_DIR / "result_bang.wav"
+LEVEL_UP_SOUND = SOUND_DIR / "level_up.wav"
+LEVEL_DOWN_SOUND = SOUND_DIR / "level_down.wav"
 
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
@@ -99,6 +107,8 @@ result_photo_modes = ("normal", "normal")  # (day, night)
 lbl_weekly_cells = []
 lbl_bot = None
 bot_frames = []
+bot_after_id = None # GIFアニメーションの再生予約を管理
+result_progress_status = "対象外"
 
 # Staff settings (loaded in main)
 STAFF_INFO = {}     # 設定JSONファイル格納用
@@ -115,6 +125,9 @@ progress_charts = {}
 
 # 下段中央の号機別生産数表示用
 machine_count_labels = {}
+
+# 結果発表まで保持する下段の生産データ
+pending_bottom_results = None
 # endregion
 
 # ================================================
@@ -569,6 +582,20 @@ def draw_ratio_bar(index, show_percentage=False):
         )
 
 
+def play_progress_sound():
+    """直近1時間の進捗状況に応じた効果音を再生する。"""
+
+    if result_progress_status == "順調":
+        sound_file = LEVEL_UP_SOUND
+    else:
+        sound_file = LEVEL_DOWN_SOUND
+
+    winsound.PlaySound(
+        str(sound_file),
+        winsound.SND_FILENAME | winsound.SND_ASYNC,
+    )
+
+
 def animate_ratio_bars(step=0):
     # 36段階 × 70ms = 約2.52秒のアニメーション
     total_steps = 36
@@ -591,6 +618,16 @@ def animate_ratio_bars(step=0):
             str(BANG_SOUND),
             winsound.SND_FILENAME | winsound.SND_ASYNC,
         )
+
+        # 結果発表と同時に下段の表・グラフを更新
+        update_bottom_results()
+
+        # 直近1時間の進捗に応じたGIFを表示
+        show_progress_gif(result_progress_status)
+
+        # 結果発表の0.5秒後に進捗状況に応じた効果音を再生
+        root.after(500, play_progress_sound)
+
         return
 
     # 進行度を0～1で表す（開始時0、終了時1）
@@ -921,30 +958,56 @@ def update_progress_chart(key, actual, target, title_text):
 
 
 def create_bot_section(frm_bottom):
-    global lbl_bot, bot_frames
+    global lbl_bot
 
     frm_bot = tk.Frame(frm_bottom, bg=PANEL)
     frm_bot.grid(row=0, column=2, sticky="nsew", padx=18, pady=10)
+
     lbl_bot = tk.Label(frm_bot, bg=PANEL)
     lbl_bot.pack(expand=True)
+
+
+def show_progress_gif(status):
+    global bot_frames, bot_after_id
+
+    # 前回のアニメーション予約をキャンセル
+    if bot_after_id is not None:
+        root.after_cancel(bot_after_id)
+        bot_after_id = None
+
+    # 前回のGIFを消去
+    lbl_bot.configure(image="")
     bot_frames = []
 
-    if BOT_GIF.exists():
-        gif = Image.open(BOT_GIF)
+    # 進捗状況に対応するGIFファイルを取得
+    gif_path = PROGRESS_GIFS.get(status)
+
+    if gif_path is None or not gif_path.exists():
+        return
+
+    # GIFの各フレームを読み込む
+    with Image.open(gif_path) as gif:
         for frame in ImageSequence.Iterator(gif):
             im = frame.convert("RGBA")
             im.thumbnail((300, 300), Image.Resampling.LANCZOS)
             bot_frames.append(ImageTk.PhotoImage(im))
 
+    # アニメーション開始
     animate_bot()
 
 
 def animate_bot(index=0):
+    global bot_after_id
+
     if not bot_frames:
-        lbl_bot.configure(text="ANIMATION GIF\nimage/factory_bot.gif", fg=TEXT, font=(FONT, 18, "bold"))
         return
+
     lbl_bot.configure(image=bot_frames[index])
-    root.after(100, animate_bot, (index + 1) % len(bot_frames))
+
+    # 500msごとに次のフレームを表示（数値を大きくすると再生速度が遅くなる）
+    bot_after_id = root.after(
+        500, animate_bot, (index + 1) % len(bot_frames)
+    )
 
 
 def update_machine_production(start_datetime, end_datetime):
@@ -1107,8 +1170,96 @@ def show_results():
     execute_results(base_datetime)
 
 
+def clear_bottom_results():
+    """結果発表前に下段の表示内容をクリアする。"""
+
+    # 生産状況の見出しと数値
+    kpi_title_labels["recent"].configure(text="直近1時間")
+    kpi_title_labels["total"].configure(text="累積生産数")
+
+    for labels in kpi_value_labels.values():
+        for lbl_cell in labels:
+            lbl_cell.configure(text="")
+
+    # 目標生産数・残業目安
+    lbl_daily_goal.configure(text="")
+    lbl_overtime.configure(text="")
+
+    # 進捗グラフ
+    for chart in progress_charts.values():
+        chart["rate"] = 0
+        chart["canvas"].delete("all")
+
+    # 号機別生産数
+    for lbl_count in machine_count_labels.values():
+        lbl_count.configure(text="")
+
+
+def update_bottom_results():
+    """結果発表時に下段の表・グラフをまとめて更新する。"""
+    global pending_bottom_results
+
+    if pending_bottom_results is None:
+        return
+
+    data = pending_bottom_results
+
+    # 下段左側の見出しを更新
+    kpi_title_labels["recent"].configure(
+        text=(
+            f"直近1時間（{data['base_datetime']:%H:%M} ～ "
+            f"{data['end_datetime']:%H:%M}）"
+        )
+    )
+    kpi_title_labels["total"].configure(
+        text=(
+            f"累積生産数（{data['start_datetime']:%H:%M} ～ "
+            f"{data['end_datetime']:%H:%M}）"
+        )
+    )
+
+    # 生産実績・目標・達成率・進捗を更新
+    update_kpi_table(
+        "recent", data["recent_actual"], data["recent_target"]
+    )
+    update_kpi_table(
+        "total", data["total_actual"], data["total_target"]
+    )
+
+    # 目標生産数を更新
+    lbl_daily_goal.configure(text=f"{data['daily_goal']:,}")
+
+    # 残業目安を更新
+    if data["total_target"] <= 0:
+        overtime = "なし"
+    elif data["total_actual"] < data["total_target"]:
+        overtime = "あり"
+    else:
+        overtime = "なし"
+
+    lbl_overtime.configure(text=overtime)
+
+    # 下段中央の進捗グラフを更新
+    for key in ("recent", "total"):
+        update_progress_chart(
+            key,
+            data[f"{key}_actual"],
+            data[f"{key}_target"],
+            kpi_title_labels[key].cget("text"),
+        )
+
+    # 号機別生産数を更新
+    update_machine_production(
+        data["start_datetime"], data["end_datetime"]
+    )
+
+    pending_bottom_results = None
+
+
 def execute_results(base_datetime):
     global results_visible, result_photo_modes
+    global result_progress_status, bot_frames, bot_after_id
+    global pending_bottom_results
 
     # 下段左側の生産実績・目標を取得
     try:
@@ -1254,62 +1405,42 @@ def execute_results(base_datetime):
     )
     end_datetime = base_datetime + timedelta(hours=1)
 
-    # 下段左側の見出しに、今回の集計時間を表示する
-    kpi_title_labels["recent"].configure(
-        text=(
-            f"直近1時間（{base_datetime:%H:%M} ～ "
-            f"{end_datetime:%H:%M}）"
-        )
-    )
-    kpi_title_labels["total"].configure(
-        text=(
-            f"累積生産数（{start_datetime:%H:%M} ～ "
-            f"{end_datetime:%H:%M}）"
-        )
-    )
-
-    # 直近1時間の目標は生産日の目標生産数を24で割った値
-    # 0:00～7:00の場合も、前日の生産目標が使われる
+    # 生産日の目標生産数を計算
     daily_goal = round(recent_target * 24)
-    lbl_daily_goal.configure(text=f"{daily_goal:,}")
 
-    # 下段中央の号機別生産数を更新
-    try:
-        update_machine_production(start_datetime, end_datetime)
-    except sqlite3.Error as error:
-        messagebox.showerror("DBエラー", str(error), parent=root)
-        return
-
-    # 下段左側の生産状況を更新
-    update_kpi_table("recent", recent_actual, recent_target)
-    update_kpi_table("total", total_actual, total_target)
-
-    # 目標0の場合は残業なしとする
-    if total_target <= 0:
-        lbl_overtime.configure(text="なし")
-    else:
-        total_rate = total_actual / total_target * 100
-
-        if total_rate < 100:
-            lbl_overtime.configure(text="あり")
-        else:
-            lbl_overtime.configure(text="なし")
-
-    # 下段中央の進捗グラフも左側KPIと同じ実績・目標で更新する
-    update_progress_chart(
-        "recent", recent_actual, recent_target,
-        kpi_title_labels["recent"].cget("text"),
+    # 直近1時間の進捗状況を保存
+    result_progress_status = get_production_status(
+        recent_actual, recent_target
     )
-    update_progress_chart(
-        "total", total_actual, total_target,
-        kpi_title_labels["total"].cget("text"),
-    )
+
+    # 結果発表時に表示する下段の生産データを一時保存
+    pending_bottom_results = {
+        "base_datetime": base_datetime,
+        "start_datetime": start_datetime,
+        "end_datetime": end_datetime,
+        "recent_actual": recent_actual,
+        "recent_target": recent_target,
+        "total_actual": total_actual,
+        "total_target": total_target,
+        "daily_goal": daily_goal,
+    }
 
     # 両方のグラフを表示
     results_visible = True
 
     lbl_ratio_titles[0].configure(text=ratio_specs[0][0])
     lbl_ratio_titles[1].configure(text=ratio_specs[1][0])
+
+    # 前回のGIFを消去
+    if bot_after_id is not None:
+        root.after_cancel(bot_after_id)
+        bot_after_id = None
+
+    lbl_bot.configure(image="")
+    bot_frames = []
+
+    # 結果発表前に下段の前回結果を消去
+    clear_bottom_results()
 
     # ドラムロール再生
     winsound.PlaySound(
