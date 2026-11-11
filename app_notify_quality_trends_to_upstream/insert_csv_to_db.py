@@ -5,6 +5,7 @@ import io
 import json
 import re
 import sqlite3
+import time
 from datetime import datetime
 from ftplib import FTP
 from pathlib import Path
@@ -20,6 +21,8 @@ FTP_USER = "KV"
 FTP_PASSWORD = ""
 REMOTE_DIR = "/MMC/INSPECTION_DATA"
 TABLE_NAME = "measurement_result"
+
+INTERVAL_SEC = 300  # 次の実行までの待機秒数
 
 CSV_COLUMNS = [
     "measured_at", "part_no", "proc_machine_no", "process_date",
@@ -245,6 +248,18 @@ def main():
 
 if __name__ == "__main__":
     try:
-        main()
-    except Exception as e:
-        print(f"処理エラー: {e}")
+        while True:
+            try:
+                main()
+            except Exception as e:
+                print(f"処理エラー: {e}")
+
+            # 次の実行までカウントダウン
+            for sec in range(INTERVAL_SEC, 0, -1):
+                print(f"\rNext execution in {sec:3d} sec", end="", flush=True)
+                time.sleep(1)
+
+            print()
+
+    except KeyboardInterrupt:
+        print("\nStopped by user.")
