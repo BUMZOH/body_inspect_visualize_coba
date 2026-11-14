@@ -1,4 +1,10 @@
 pywebview
 ping3
 pillow
+matplotlib
+pandas
 
+# Jupyter Notebook
+ipykernel
+papermill
+nbstripout
