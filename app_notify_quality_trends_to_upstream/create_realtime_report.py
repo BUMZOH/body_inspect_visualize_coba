@@ -26,8 +26,18 @@ OUTPUT_HTML_PATH = DESKTOP_PATH / "body_insp_measurement_trend.html"
 # ================================================
 #   Functions
 # ================================================
-def normalize_date(value):
-    parts = value.split("-")
+def normalize_datetime(value):
+    """
+    入力された基準日時を YYYY-MM-DD HH:MM:SS に統一する。
+
+    入力例:
+        2026-11-14 17:15:00
+        2026-11-14 17:15
+        11-14 17:15
+    """
+    date_part, time_part = value.strip().split()
+
+    parts = date_part.split("-")
 
     if len(parts) == 2:
         year = datetime.now().year
@@ -38,17 +48,27 @@ def normalize_date(value):
         if year < 100:
             year += 2000
     else:
-        raise ValueError("日付は YYYY-M-D / YY-M-D / M-D で入力してください。")
+        raise ValueError("日付形式が正しくありません")
 
-    date = datetime(year, month, day)
+    time_parts = time_part.split(":")
 
-    return date.strftime("%Y-%m-%d")
+    if len(time_parts) == 2:
+        hour, minute = map(int, time_parts)
+        second = 0
+    elif len(time_parts) == 3:
+        hour, minute, second = map(int, time_parts)
+    else:
+        raise ValueError("時刻形式が正しくありません")
+
+    dt = datetime(year, month, day, hour, minute, second)
+
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def create_html_report(start_date, end_date):
+def create_html_report(std_datetime):
     print()
     print(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] レポート更新開始")
-    print(f"対象期間: {start_date} ～ {end_date}")
+    print(f"基準日時: {std_datetime}")
 
     try:
         print("Notebookを実行しています...")
@@ -58,8 +78,7 @@ def create_html_report(start_date, end_date):
             OUTPUT_NOTEBOOK_PATH,
             cwd=str(BASE_DIR),
             parameters={
-                "START_DATE": start_date,
-                "END_DATE": end_date,
+                "STD_DATETIME": std_datetime,
             },
         )
 
@@ -115,8 +134,7 @@ def add_auto_refresh(html_path):
 # ================================================
 def main():
     print(f"実行環境 = {sys.executable}")
-    start_date = normalize_date(input("開始日: "))
-    end_date = normalize_date(input("終了日: "))
+    std_datetime = normalize_datetime(input("基準日時: "))
 
     print()
     print("リアルタイムHTMLレポートを開始します。")
@@ -129,7 +147,7 @@ def main():
     try:
         while True:
             try:
-                create_html_report(start_date, end_date)
+                create_html_report(std_datetime)
 
                 if not browser_opened:
                     webbrowser.open(OUTPUT_HTML_PATH.resolve().as_uri())
