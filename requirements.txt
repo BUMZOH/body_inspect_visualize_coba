@@ -1,2 +1,4 @@
 pywebview
 ping3
+pillow
+

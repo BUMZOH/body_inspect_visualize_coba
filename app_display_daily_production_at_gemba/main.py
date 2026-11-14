@@ -1476,15 +1476,26 @@ def check_auto_results():
     now = datetime.now()
     current_hour = now.replace(minute=0, second=0, microsecond=0)
 
-    # 毎時05分に自動発表する
-    if auto_result_enabled and now.minute == 5:
-        # 同じ時間帯の重複発表を防止
-        if last_auto_result_hour != current_hour:
-            last_auto_result_hour = current_hour
-            auto_show_results()
+    if auto_result_enabled:
+        # 次回発表時刻を計算（毎時05分）
+        next_time = current_hour.replace(minute=5)
+        if now >= next_time:
+            next_time += timedelta(hours=1)
+
+        # 自動発表の状態と次回時刻を表示
+        lbl_auto_result.configure(
+            text=f"自動発表=有効（次回 {next_time:%H:%M}）"
+        )
+
+        # 毎時05分に自動発表する
+        if now.minute == 5:
+            if last_auto_result_hour != current_hour:
+                last_auto_result_hour = current_hour
+                auto_show_results()
 
     # 1秒後に再確認
     root.after(1000, check_auto_results)
+
 
 # endregion
 
