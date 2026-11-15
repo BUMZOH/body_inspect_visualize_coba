@@ -134,7 +134,9 @@ def add_auto_refresh(html_path):
 # ================================================
 def main():
     print(f"実行環境 = {sys.executable}")
-    std_datetime = normalize_datetime(input("基準日時: "))
+
+    input_datetime = input("基準日時（Enterで現在日時）: ").strip()
+    std_datetime = normalize_datetime(input_datetime) if input_datetime else None
 
     print()
     print("リアルタイムHTMLレポートを開始します。")
@@ -147,7 +149,12 @@ def main():
     try:
         while True:
             try:
-                create_html_report(std_datetime)
+                # 基準日時が未指定の場合は、毎回現在日時を取得
+                current_std_datetime = (
+                    std_datetime or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                )
+
+                create_html_report(current_std_datetime)
 
                 if not browser_opened:
                     webbrowser.open(OUTPUT_HTML_PATH.resolve().as_uri())
