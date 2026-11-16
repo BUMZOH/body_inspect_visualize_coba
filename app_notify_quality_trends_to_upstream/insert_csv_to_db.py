@@ -6,7 +6,7 @@ import json
 import re
 import sqlite3
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from ftplib import FTP
 from pathlib import Path
 
@@ -28,7 +28,7 @@ CSV_COLUMNS = [
     "measured_at", "part_no", "proc_machine_no", "process_date",
     "measured_value", "judgment", "upper_limit", "lower_limit",
 ]
-FILE_PATTERN = re.compile(r"^([a-z][a-z0-9_]*)_(\d{8})_(\d{2})\.csv$", re.I)
+FILE_PATTERN = re.compile(r"^([a-z][a-z0-9_]*)_(\d{8})_(\d{4})\.csv$", re.I)
 
 
 # ================================================
@@ -66,12 +66,12 @@ def get_csv_files(ftp):
         name = remote_name.rsplit("/", 1)[-1]
         match = FILE_PATTERN.fullmatch(name)
         if match:
-            item, day, hour = match.groups()
+            item, day, hour_minute = match.groups()
             try:
-                file_hour = datetime.strptime(f"{day}{hour}", "%Y%m%d%H")
+                file_time = datetime.strptime(f"{day}{hour_minute}", "%Y%m%d%H%M")
             except ValueError:
                 continue
-            files.append((file_hour, item, name, remote_name))
+            files.append((file_time, item, name, remote_name))
 
     if not files:
         return []
@@ -79,21 +79,21 @@ def get_csv_files(ftp):
     # 検査項目ごとの最新時間帯を取得
     latest_by_item = {}
 
-    for file_hour, item, name, remote_name in files:
-        if item not in latest_by_item or file_hour > latest_by_item[item]:
-            latest_by_item[item] = file_hour
+    for file_time, item, name, remote_name in files:
+        if item not in latest_by_item or file_time > latest_by_item[item]:
+            latest_by_item[item] = file_time
 
     # 最新時間帯を表示
-    for item, latest_hour in sorted(latest_by_item.items()):
-        print(f"最新時間帯（処理対象外）: {item} / {latest_hour:%Y-%m-%d %H}:00")
+    for item, latest_time in sorted(latest_by_item.items()):
+        print(f"最新時間帯（処理対象外）: {item} / {latest_time:%Y-%m-%d %H:%M}")
 
     # 各検査項目の最新時間帯を除外
     target_files = []
 
     for entry in files:
-        file_hour, item, name, remote_name = entry
+        file_time, item, name, remote_name = entry
 
-        if file_hour < latest_by_item[item]:
+        if file_time < latest_by_item[item]:
             target_files.append(entry)
 
     return sorted(target_files)
@@ -105,7 +105,7 @@ def download_csv(ftp, remote_name):
     return buffer.getvalue()
 
 
-def parse_csv(data, inspection_item, file_hour, machine_no):
+def parse_csv(data, inspection_item, file_time, machine_no):
     """
     CSVデータを解析し、SQLite登録用のデータ一覧を返す。
 
@@ -116,7 +116,7 @@ def parse_csv(data, inspection_item, file_hour, machine_no):
     Args:
         data: FTPから受信したCSVのバイナリデータ
         inspection_item: 検査項目名（例: thickness）
-        file_hour: ファイル名から取得した日時（datetime型）
+        file_time: ファイル名から取得した日時（datetime型）
         machine_no: 検査装置の号機番号（例: 412）
 
     Returns:
@@ -149,8 +149,8 @@ def parse_csv(data, inspection_item, file_hour, machine_no):
             process_date = datetime.strptime(
                 row["process_date"], "%Y-%m-%d"
             ).strftime("%Y-%m-%d")
-            if measured_at.replace(minute=0, second=0) != file_hour:
-                raise ValueError("測定日時がファイル名の時間帯と一致しません")
+            if not file_time <= measured_at < file_time + timedelta(minutes=10):
+                raise ValueError("測定日時がファイル名の10分間と一致しません")
             values = (
                 machine_no,
                 inspection_item,
@@ -198,10 +198,10 @@ def process_machine(conn, machine_no, plc_ip):
         files = get_csv_files(ftp)
         print(f"処理対象CSV: {len(files)}件")
 
-        for file_hour, item, name, remote_name in files:
+        for file_time, item, name, remote_name in files:
             try:
                 data = download_csv(ftp, remote_name)
-                rows = parse_csv(data, item, file_hour, machine_no)
+                rows = parse_csv(data, item, file_time, machine_no)
                 with conn:
                     inserted = insert_rows(conn, rows)
                 print(f"{name}: 登録={inserted} / 重複={len(rows) - inserted}")

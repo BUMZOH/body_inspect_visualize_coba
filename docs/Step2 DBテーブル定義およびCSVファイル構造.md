@@ -1,6 +1,6 @@
 
 # Step2 DBテーブル定義およびCSVファイル構造
-最終更新: 2026/11/11
+最終更新: 2026/11/16
 
 ## テーブル：measurement_result
 
@@ -39,11 +39,13 @@
 - カラムおよび値にはダブルクオーテーションは不要
 
 ### CSVファイル 命名規則
-CSVファイルは、各検査項目に対し1時間ごとに分割する。
+CSVファイルは、各検査項目に対し10分ごとに分割する。
+ファイル名はデータ開始時刻を表す。
 ```
-(検査項目名)_(年月日)_(時間).csv
+(検査項目名)_(年月日)_(時間分).csv
 
-例: total_length_20261108_05.csv
+例: 2026-11-08 05:20:00 ～ 05:29:59(10分間)の全長データ
+→   total_length_20261108_0520.csv
 ```
 
 ### CSVファイル 保存場所
@@ -51,14 +53,14 @@ SDカード内の`inspection_data`フォルダ内に保存する
 ```
 SD
 └─ inspection_data
-   ├─ total_length_20261108_05.csv
-   ├─ total_length_20261108_06.csv
+   ├─ total_length_20261108_0500.csv
+   ├─ total_length_20261108_0510.csv
    ├─ ...
-   ├─ thickness_20261108_05.csv
-   ├─ thickness_20261108_06.csv
+   ├─ thickness_20261108_0500.csv
+   ├─ thickness_20261108_0510.csv
    ├─ ...
-   ├─ bottom_thickness_20261108_05.csv
-   ├─ bottom_thickness_20261108_06.csv
+   ├─ bottom_thickness_20261108_0500.csv
+   ├─ bottom_thickness_20261108_0510.csv
    └─ ...
 ```
 <BR><BR><BR>
