@@ -94,7 +94,7 @@ def create_sample_goal():
 
 if __name__ == "__main__":
     create_table()
-    create_sample_data()
-    create_sample_goal()
+    # create_sample_data()
+    # create_sample_goal()
     print(f"Database ready: {DB_FILE}")
 

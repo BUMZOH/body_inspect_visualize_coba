@@ -26,7 +26,7 @@ ReceivedMachine: TypeAlias = tuple[str, list[ProductionRow]]
 BASE_DIR = Path(__file__).resolve().parent
 CONFIG_FILE = BASE_DIR / "config.json"
 DB_FILE = BASE_DIR.parent / "data" / "body_insp_production_data.db"
-INTERVAL_SEC = 180
+INTERVAL_SEC = 60
 DATA_COUNT = 500
 
 # 32ビット(D形式)を500個ずつ読み取る。各値は2ワードを使用する。
