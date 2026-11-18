@@ -139,6 +139,12 @@ function getTableData() {
     return data;
 }
 
+function needsAbnormalityReport(data) {
+    return Object.entries(data).some(([key, value]) => {
+        return key.endsWith("_ngcount2") && Number(value) >= 100;
+    });
+}
+
 async function registerData() {
     const inputData = getInputData();
     const tableData = getTableData();
@@ -178,10 +184,21 @@ async function registerData() {
 
     alert("データ登録完了しました");
 
+    // 再検査NG数が100以上の場合、異常連絡書の発行を確認する。
+    if (needsAbnormalityReport(data)) {
+        const shouldIssue = confirm("異常連絡書に転記しますか？");
+
+        if (shouldIssue) {
+            const result = await window.pywebview.api.create_abnormality_report(data);
+
+            if (!result.ok) {
+                alert("異常連絡書の作成に失敗しました。\n" + result.message);
+            }
+        }
+    }
+
     resetAll();
 }
-
-
 
 
 // ボタンへのイベントハンドラ登録

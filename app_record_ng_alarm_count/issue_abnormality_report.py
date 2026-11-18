@@ -4,11 +4,12 @@ Windows PCにMicrosoft Excelとxlwingsが必要。
 現段階ではDBのID=259を参考にした固定データを転記する。
 転記後はExcelを開いたままにし、作業者が追記・印刷できるようにする。
 """
-
+import ctypes
 from datetime import datetime
 import json
 from pathlib import Path
 import shutil
+
 
 import xlwings as xw
 
@@ -124,8 +125,13 @@ def issue_abnormality_report(data: dict) -> Path:
             sheet.range(count_cell).value = count
 
         book.save()
-        book.activate()
         app.visible = True
+        book.activate()
+
+        # Excelウィンドウを最大化して最前面に表示する
+        hwnd = app.hwnd
+        ctypes.windll.user32.ShowWindow(hwnd, 3)  # SW_MAXIMIZE
+        ctypes.windll.user32.SetForegroundWindow(hwnd)
 
         # 正常終了時はbook.close() / app.quit()を呼ばない。
         # Excelは作業者が閉じるまで開いたままにする。

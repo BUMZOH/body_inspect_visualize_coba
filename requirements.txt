@@ -3,6 +3,7 @@ ping3
 pillow
 matplotlib
 pandas
+xlwings
 
 # Jupyter Notebook
 ipykernel

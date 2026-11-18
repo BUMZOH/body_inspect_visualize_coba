@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # 独自モジュール
 import db
 from common_lib_mw import kv_com, kv_alarm_history
+from issue_abnormality_report import issue_abnormality_report
 
 
 # CONSTANTS -----------------------------------------------
@@ -710,7 +711,24 @@ class AppAPI:
                 "ok": False,
                 "message": str(e),
             }
-    
+
+
+    def create_abnormality_report(self, data: dict) -> dict:
+        """異常連絡書をExcelで作成する。"""
+        try:
+            output_file = issue_abnormality_report(data)
+
+            return {
+                "ok": True,
+                "message": f"異常連絡書を作成しました。\n{output_file}",
+            }
+
+        except Exception as e:
+            return {
+                "ok": False,
+                "message": str(e),
+            }
+
 
     def get_record_waiting_machines(self) -> dict[str, list[str]]:
         return search_record_waiting_machine()
