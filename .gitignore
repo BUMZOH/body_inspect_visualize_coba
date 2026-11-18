@@ -10,3 +10,6 @@ __pycache__/
 
 # SQLite
 *.db
+
+# Step1: 異常処置連絡書ファイル
+excel_output/
