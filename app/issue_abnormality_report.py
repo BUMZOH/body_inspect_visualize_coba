@@ -100,7 +100,7 @@ def issue_abnormality_report(data: dict) -> Path:
     abnormal_items = abnormal_items[:len(NG_CELLS)]
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:19]
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = OUTPUT_DIR / f"異常連絡書_{timestamp}.xlsx"
     shutil.copy2(TEMPLATE_FILE, output_file)
 
