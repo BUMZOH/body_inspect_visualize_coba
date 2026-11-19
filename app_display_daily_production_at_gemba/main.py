@@ -103,6 +103,9 @@ animated_ratios = [0.5, 0.5]
 ratio_targets = [a / (a + b) if a + b else 0.5 for _, a, b in ratio_specs]
 result_photo_modes = ("normal", "normal")  # (day, night)
 
+# 稼働時間（分）を保持する：直近1時間、全経過時間
+ratio_minutes = [(0, 0), (0, 0)]
+
 # Weekly production and robot animation
 lbl_weekly_cells = []
 lbl_bot = None
@@ -553,32 +556,36 @@ def draw_ratio_bar(index, show_percentage=False):
     if w <= 1:
         return
 
-    # Canvasの横幅に昼勤の比率を掛けて、左右の境界位置を求める
-    # 例：横幅1000px、比率0.6なら境界位置は600px
+    # 今週と先週の境界位置を計算
     split = w * animated_ratios[index]
 
-    # 境界位置を基準に、左側を昼勤、右側を夜勤の色で描画
+    # 今週・先週の棒グラフを描画
     cvs_ratio.create_rectangle(0, 0, split, h, fill=DAY, outline="")
     cvs_ratio.create_rectangle(split, 0, w, h, fill=NIGHT, outline="")
 
-    # アニメーション終了後だけパーセントを表示
+    # アニメーション終了後だけ数値を表示
     if show_percentage:
         _, left, right = ratio_specs[index]
+        left_min, right_min = ratio_minutes[index]
 
+        # 今週：パーセントと稼働時間
         cvs_ratio.create_text(
             24, h / 2,
-            text=f"{left} %",
+            text=f"{left} %\n({left_min:.1f} min)",
             anchor="w",
+            justify="left",
             fill="white",
-            font=(FONT, 21, "bold"),
+            font=(FONT, 17, "bold"),
         )
 
+        # 先週：パーセントと稼働時間
         cvs_ratio.create_text(
             w - 24, h / 2,
-            text=f"{right} %",
+            text=f"{right} %\n({right_min:.1f} min)",
             anchor="e",
+            justify="right",
             fill="black",
-            font=(FONT, 21, "bold"),
+            font=(FONT, 17, "bold"),
         )
 
 
@@ -1298,16 +1305,13 @@ def execute_results(base_datetime):
     # 今週・先週の割合を計算
     total_sec = this_week_sec + last_week_sec
 
+    # 今週・先週ともに0秒の場合は50%ずつとする
     if total_sec == 0:
-        messagebox.showerror(
-            "データエラー",
-            "今週と先週の稼働時間が両方とも0秒です。",
-            parent=root,
-        )
-        return
-
-    this_week_rate = round(this_week_sec / total_sec * 100)
-    last_week_rate = 100 - this_week_rate
+        this_week_rate = 50
+        last_week_rate = 50
+    else:
+        this_week_rate = round(this_week_sec / total_sec * 100)
+        last_week_rate = 100 - this_week_rate
 
     print(f"Ratio: {this_week_rate}% / {last_week_rate}%")
 
@@ -1320,7 +1324,8 @@ def execute_results(base_datetime):
         last_week_rate,
     )
 
-    ratio_targets[0] = this_week_sec / total_sec
+    ratio_targets[0] = this_week_sec / total_sec if total_sec else 0.5
+    ratio_minutes[0] = (this_week_sec / 60, last_week_sec / 60)
 
     # 今週・先週の累積開始日時
     this_week_start = get_shift_start_datetime(base_datetime)
@@ -1349,18 +1354,16 @@ def execute_results(base_datetime):
     # 今週・先週の累積稼働時間比率
     cumulative_total = this_week_total + last_week_total
 
-    if cumulative_total == 0:
-        messagebox.showerror(
-            "データエラー",
-            "今週と先週の累積稼働時間が両方とも0秒です。",
-            parent=root,
-        )
-        return
 
-    this_week_cumulative_rate = round(
-        this_week_total / cumulative_total * 100
-    )
-    last_week_cumulative_rate = 100 - this_week_cumulative_rate
+    # 今週・先週ともに0秒の場合は50%ずつとする
+    if cumulative_total == 0:
+        this_week_cumulative_rate = 50
+        last_week_cumulative_rate = 50
+    else:
+        this_week_cumulative_rate = round(
+            this_week_total / cumulative_total * 100
+        )
+        last_week_cumulative_rate = 100 - this_week_cumulative_rate
 
     print(
         f"Cumulative ratio: "
@@ -1377,7 +1380,10 @@ def execute_results(base_datetime):
         last_week_cumulative_rate,
     )
 
-    ratio_targets[1] = this_week_total / cumulative_total
+    ratio_targets[1] = (
+        this_week_total / cumulative_total if cumulative_total else 0.5
+    )
+    ratio_minutes[1] = (this_week_total / 60, last_week_total / 60)
 
     # 週間検査数を更新
     try:
