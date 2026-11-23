@@ -13,3 +13,6 @@ __pycache__/
 
 # Step1: 異常処置連絡書ファイル
 excel_output/
+
+# 昼勤、夜勤シフト情報
+staff_shift_info.json

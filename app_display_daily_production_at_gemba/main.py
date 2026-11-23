@@ -183,13 +183,19 @@ def get_cumulative_operating_time(start_datetime, end_datetime):
     return total_sec
 
 def get_weekly_production(base_datetime):
-    # 基準日を含む週の月曜日
+    # 生産日は8:00に切り替わる
+    production_datetime = base_datetime - timedelta(hours=8)
+
+    # 生産日を基準に週の月曜日を求める
     monday = (
-        base_datetime - timedelta(days=base_datetime.weekday())
+        production_datetime - timedelta(days=production_datetime.weekday())
     ).replace(hour=0, minute=0, second=0, microsecond=0)
 
     weekly_day = []
     weekly_night = []
+
+    # 基準日時の1時間後を集計終了時刻とする
+    end_datetime = base_datetime + timedelta(hours=1)
 
     with sqlite3.connect(DB_FILE) as conn:
         for i in range(6):
@@ -200,6 +206,10 @@ def get_weekly_production(base_datetime):
 
             night_start = day_end
             night_end = day_end + timedelta(hours=12)
+
+            # 基準日時より未来のデータは集計しない
+            day_end = min(day_end, end_datetime)
+            night_end = min(night_end, end_datetime)
 
             day_count = conn.execute(
                 """
